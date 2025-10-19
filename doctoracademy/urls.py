@@ -17,9 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.urls import path, include
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+     path('', views.home, name='home'),  
     path('cases/', include('cases.urls')),
     path('lectures/', include('lectures.urls')),
     path('courses/', include('courses.urls')),
@@ -29,4 +31,7 @@ urlpatterns = [
     path('notification/', include('notification.urls')),
     path('ai_chatbot/', include('ai_chatbot.urls')),
     path('users/', include('users.urls')),
+]
+urlpatterns += [
+    path('i18n/', include('django.conf.urls.i18n')),
 ]

@@ -1,0 +1,107 @@
+# Arabic translations for DoctorAcademy
+# SOME DESCRIPTIVE TITLE
+# Copyright (C) 2025 Your Name
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+
+msgid ""
+msgstr ""
+"Project-Id-Version: DoctorAcademy 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-20 00:53+0300\n"
+"PO-Revision-Date: 2025-10-20 00:53+0300\n"
+"Last-Translator: Your Name <EMAIL@ADDRESS>\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#: .\doctoracademy\templates\home.html:39
+msgid "Home"
+msgstr "الرئيسية"
+
+#: .\doctoracademy\templates\home.html:40
+msgid "Courses"
+msgstr "الكورسات"
+
+#: .\doctoracademy\templates\home.html:41
+msgid "Lectures"
+msgstr "المحاضرات"
+
+#: .\doctoracademy\templates\home.html:42
+msgid "Store"
+msgstr "المتجر"
+
+#: .\doctoracademy\templates\home.html:62
+msgid "Join Us"
+msgstr "انضم إلينا"
+
+#: .\doctoracademy\templates\home.html:77
+msgid "Upgrade your medical skills today"
+msgstr "طوّر مهاراتك الطبية اليوم"
+
+#: .\doctoracademy\templates\home.html:78
+msgid "All courses and lectures are fully paid and certified."
+msgstr "كل الكورسات والمحاضرات مدفوعة ومعتمدة بالكامل"
+
+#: .\doctoracademy\templates\home.html:79
+msgid "Explore Courses"
+msgstr "استكشف الكورسات"
+
+#: .\doctoracademy\templates\home.html:86
+msgid "Featured Courses"
+msgstr "الكورسات المميزة"
+
+#: .\doctoracademy\templates\home.html:94
+msgid "Advanced Anatomy"
+msgstr "تشريح متقدم"
+
+#: .\doctoracademy\templates\home.html:104
+msgid "Surgical Techniques"
+msgstr "تقنيات جراحية"
+
+#: .\doctoracademy\templates\home.html:114
+msgid "Medical Imaging"
+msgstr "التصوير الطبي"
+
+#: .\doctoracademy\templates\home.html:116
+msgid "Buy Now"
+msgstr "اشتري الآن"
+
+#: .\doctoracademy\templates\home.html:130
+msgid "Doctor Academy"
+msgstr "أكاديمية الطبيب"
+
+#: .\doctoracademy\templates\home.html:131
+msgid "Upgrade your medical skills with certified courses and lectures online."
+msgstr "طوّر مهاراتك الطبية من خلال كورسات ومحاضرات معتمدة عبر الإنترنت"
+
+#: .\doctoracademy\templates\home.html:136
+msgid "Quick Links"
+msgstr "روابط سريعة"
+
+#: .\doctoracademy\templates\home.html:147
+msgid "Support"
+msgstr "الدعم"
+
+#: .\doctoracademy\templates\home.html:149
+msgid "FAQ"
+msgstr "الأسئلة الشائعة"
+
+#: .\doctoracademy\templates\home.html:150
+msgid "Help Center"
+msgstr "مركز المساعدة"
+
+#: .\doctoracademy\templates\home.html:151
+msgid "Contact Us"
+msgstr "اتصل بنا"
+
+#: .\doctoracademy\templates\home.html:157
+msgid "Follow Us"
+msgstr "تابعنا"
+
+#: .\doctoracademy\templates\home.html:169
+msgid "All rights reserved."
+msgstr "جميع الحقوق محفوظة"

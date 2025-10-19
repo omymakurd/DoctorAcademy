@@ -1,0 +1,178 @@
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as BIDI %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" dir="{% if BIDI %}rtl{% else %}ltr{% endif %}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctor Academy</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+
+  <!-- RTL Support -->
+  <style>
+    html[dir="rtl"] {
+      direction: rtl;
+      text-align: right;
+    }
+    html[dir="rtl"] .ms-auto { margin-left: 0 !important; margin-right: auto !important; }
+    html[dir="rtl"] .me-3 { margin-right: 0 !important; margin-left: 1rem !important; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-scroll">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#">Doctor Academy</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item"><a class="nav-link active" href="#">{% trans "Home" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">{% trans "Courses" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">{% trans "Lectures" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">{% trans "Store" %}</a></li>
+
+        <!-- Language Switcher -->
+        <li class="nav-item dropdown ms-3">
+          <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown">
+            {% if LANGUAGE_CODE == 'ar' %}العربية{% else %}English{% endif %}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+            <li>
+              <form action="{% url 'set_language' %}" method="post" class="d-flex flex-column">
+                {% csrf_token %}
+                <input name="next" type="hidden" value="{{ request.path }}">
+                <button name="language" value="en" class="dropdown-item">English</button>
+                <button name="language" value="ar" class="dropdown-item">العربية</button>
+              </form>
+            </li>
+          </ul>
+        </li>
+
+        <li class="nav-item ms-2">
+          <a class="btn btn-warning text-dark fw-bold" href="#">{% trans "Join Us" %}</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero-section d-flex align-items-center justify-content-center position-relative">
+  <video autoplay muted loop playsinline class="hero-video">
+    <source src="{% static 'videos/hero-video.mp4' %}" type="video/mp4">
+  </video>
+  <div class="hero-overlay position-absolute top-0 start-0 w-100 h-100"></div>
+  
+  <div class="hero-content text-center text-white position-relative animate__animated animate__fadeIn">
+    <h1>{% trans "Upgrade your medical skills today" %}</h1>
+    <p>{% trans "All courses and lectures are fully paid and certified." %}</p>
+    <a href="#" class="btn btn-warning btn-lg">{% trans "Explore Courses" %}</a>
+  </div>
+</section>
+
+<!-- Featured Courses -->
+<section class="py-5">
+  <div class="container">
+    <h2 class="fw-bold mb-4 text-primary">{% trans "Featured Courses" %}</h2>
+    <div class="row g-4">
+      {% comment %} Example Courses {% endcomment %}
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+          <img src="{% static 'images/course1.jpg' %}" class="card-img-top" alt="Course 1">
+          <div class="card-body">
+            <h5 class="card-title">{% trans "Advanced Anatomy" %}</h5>
+            <p class="card-text text-muted">$120</p>
+            <a href="#" class="btn btn-warning w-100">{% trans "Buy Now" %}</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+          <img src="{% static 'images/course2.jpg' %}" class="card-img-top" alt="Course 2">
+          <div class="card-body">
+            <h5 class="card-title">{% trans "Surgical Techniques" %}</h5>
+            <p class="card-text text-muted">$150</p>
+            <a href="#" class="btn btn-warning w-100">{% trans "Buy Now" %}</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+          <img src="{% static 'images/course3.jpg' %}" class="card-img-top" alt="Course 3">
+          <div class="card-body">
+            <h5 class="card-title">{% trans "Medical Imaging" %}</h5>
+            <p class="card-text text-muted">$100</p>
+            <a href="#" class="btn btn-warning w-100">{% trans "Buy Now" %}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-dark text-white pt-5 pb-4">
+  <div class="container">
+    <div class="row">
+      <!-- About -->
+      <div class="col-md-4 mb-4">
+        <h5 class="text-warning fw-bold mb-3">{% trans "Doctor Academy" %}</h5>
+        <p>{% trans "Upgrade your medical skills with certified courses and lectures online." %}</p>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="col-md-2 mb-4">
+        <h6 class="text-uppercase fw-bold mb-3">{% trans "Quick Links" %}</h6>
+        <ul class="list-unstyled">
+          <li><a href="#" class="text-white text-decoration-none">{% trans "Home" %}</a></li>
+          <li><a href="#" class="text-white text-decoration-none">{% trans "Courses" %}</a></li>
+          <li><a href="#" class="text-white text-decoration-none">{% trans "Lectures" %}</a></li>
+          <li><a href="#" class="text-white text-decoration-none">{% trans "Store" %}</a></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div class="col-md-2 mb-4">
+        <h6 class="text-uppercase fw-bold mb-3">{% trans "Support" %}</h6>
+        <ul class="list-unstyled">
+          <li><a href="#" class="text-white text-decoration-none">{% trans "FAQ" %}</a></li>
+          <li><a href="#" class="text-white text-decoration-none">{% trans "Help Center" %}</a></li>
+          <li><a href="#" class="text-white text-decoration-none">{% trans "Contact Us" %}</a></li>
+        </ul>
+      </div>
+
+      <!-- Social -->
+      <div class="col-md-4 mb-4 text-md-end">
+        <h6 class="text-uppercase fw-bold mb-3">{% trans "Follow Us" %}</h6>
+        <a href="#" class="text-warning me-3 fs-5"><i class="bi bi-facebook"></i></a>
+        <a href="#" class="text-warning me-3 fs-5"><i class="bi bi-twitter"></i></a>
+        <a href="#" class="text-warning me-3 fs-5"><i class="bi bi-instagram"></i></a>
+        <a href="#" class="text-warning fs-5"><i class="bi bi-linkedin"></i></a>
+      </div>
+    </div>
+
+    <hr class="border-secondary">
+
+    <div class="row">
+      <div class="col text-center text-muted">
+        &copy; 2025 Doctor Academy. {% trans "All rights reserved." %}
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/home.js' %}"></script>
+</body>
+</html>
