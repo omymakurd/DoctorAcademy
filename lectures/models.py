@@ -53,7 +53,7 @@ class BasicLecture(models.Model):
     discipline = models.ForeignKey('Discipline', on_delete=models.CASCADE, related_name='lectures')
     title = models.CharField(max_length=255)
     lecture_type = models.CharField(max_length=20, choices=[('recorded','Recorded Video'),('zoom','Live Zoom')])
-    video_url = models.URLField(blank=True, null=True)
+    video_file = models.FileField(upload_to='lectures/videos/', blank=True, null=True)
     zoom_link = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     instructor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='basic_lectures')

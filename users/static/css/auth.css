@@ -1,0 +1,138 @@
+:root {
+  --primary-color: #0D47A1;
+  --secondary-color: #1976D2;
+  --accent-color: #FFA000;
+  --bg-color: #F5F5F5;
+  --text-color: #212121;
+  --text-muted: #757575;
+}
+
+/* ============================= */
+/*         AUTH SECTION          */
+/* ============================= */
+
+.auth-section {
+  background-color: var(--bg-color);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+/* ----------------------------- */
+/*           CARD                */
+/* ----------------------------- */
+
+.auth-card {
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  max-width: 420px;
+  width: 100%;
+  padding: 2.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.auth-card:hover {
+  transform: translateY(-4px);
+}
+
+/* ----------------------------- */
+/*           TABS                */
+/* ----------------------------- */
+
+.auth-tabs {
+  background-color: #f1f1f1;
+  border-radius: 10px;
+  display: flex;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 12px 0;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.auth-tab.active {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.auth-tab:hover:not(.active) {
+  background-color: rgba(13, 71, 161, 0.1);
+  color: var(--primary-color);
+}
+
+/* ----------------------------- */
+/*           FORM                */
+/* ----------------------------- */
+
+.auth-form {
+  display: none;
+  animation: fadeIn 0.4s ease;
+  text-align: left;
+}
+
+.auth-form.active {
+  display: block;
+}
+
+.form-control {
+  width: 100%;
+  border-radius: 10px;
+  border: 1.5px solid #ddd;
+  padding: 10px 14px;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15);
+  outline: none;
+}
+
+/* ----------------------------- */
+/*           BUTTONS             */
+/* ----------------------------- */
+
+.btn-primary {
+  width: 100%;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--secondary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.25);
+}
+
+/* ----------------------------- */
+/*           ANIMATIONS          */
+/* ----------------------------- */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,84 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Course Provider Dashboard{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+  <style>
+    :root {
+      --primary-color: #2E7D32;
+      --secondary-color: #388E3C;
+      --accent-color: #C0CA33;
+      --bg-color: #F9FBE7;
+      --navbar-height: 70px;
+      --sidebar-width: 240px;
+    }
+    body {
+      margin: 0;
+      background-color: var(--bg-color);
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      height: var(--navbar-height);
+      background-color: var(--primary-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      z-index: 1000;
+    }
+    .sidebar {
+      position: fixed;
+      top: var(--navbar-height);
+      left: 0;
+      width: var(--sidebar-width);
+      height: calc(100vh - var(--navbar-height));
+      background-color: var(--primary-color);
+      padding-top: 1rem;
+      color: white;
+    }
+    .sidebar a {
+      display: block;
+      padding: 0.8rem 1.2rem;
+      color: white;
+      text-decoration: none;
+      border-left: 4px solid transparent;
+    }
+    .sidebar a:hover {
+      background-color: var(--secondary-color);
+      border-left-color: var(--accent-color);
+    }
+    .main-content {
+      margin-left: var(--sidebar-width);
+      margin-top: var(--navbar-height);
+      padding: 2rem;
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+  <div class="navbar">
+    <h4>Course Provider Dashboard</h4>
+    <a href="#" class="text-white">Logout</a>
+  </div>
+
+  <div class="sidebar">
+    <h5 class="text-center">{{ user.username }}</h5>
+    <a href="#">Dashboard</a>
+    <a href="#">My Courses</a>
+    <a href="#">Enrollments</a>
+    <a href="#">Revenue</a>
+    <a href="#">Profile</a>
+  </div>
+
+  <div class="main-content">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

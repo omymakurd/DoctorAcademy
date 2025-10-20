@@ -1,0 +1,58 @@
+{% extends "dashboards/instructor_base.html" %}
+{% load static %}
+
+{% block title %}Add Basic Lecture{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3>Add Basic Lecture</h3>
+  <form method="post" enctype="multipart/form-data" class="mt-3">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>System</label>
+      {{ form.system }}
+    </div>
+
+    <div class="form-group">
+      <label>Discipline</label>
+      {{ form.discipline }}
+    </div>
+
+    {{ form.title.label_tag }} {{ form.title }}
+    {{ form.lecture_type.label_tag }} {{ form.lecture_type }}
+    {{ form.video_file.label_tag }} {{ form.video_file }}
+    {{ form.zoom_link.label_tag }} {{ form.zoom_link }}
+    {{ form.description.label_tag }} {{ form.description }}
+    {{ form.price.label_tag }} {{ form.price }}
+
+    <button type="submit" class="btn btn-primary mt-3">Save Lecture</button>
+  </form>
+</div>
+<script>
+document.getElementById('id_system').addEventListener('change', function() {
+    const systemId = this.value;
+    const url = "{% url 'ajax_load_disciplines' %}?system_id=" + systemId;
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const disciplineSelect = document.getElementById('id_discipline');
+            disciplineSelect.innerHTML = '<option value="">---------</option>';
+            data.forEach(d => {
+                disciplineSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+            });
+        });
+});
+</script>
+
+<style>
+  .form-label {
+    font-weight: 600;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+</style>
+{% endblock %}

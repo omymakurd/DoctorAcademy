@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Login / Signup" %} - Doctor Academy{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+  <div class="container">
+    <div class="row justify-content-center align-items-center vh-100">
+      <div class="col-md-6 col-lg-5">
+        <div class="auth-card p-5 shadow-lg rounded-4 bg-white">
+          <h2 class="text-center text-primary fw-bold mb-4">
+            {% trans "Welcome to Doctor Academy" %}
+          </h2>
+
+          <!-- Tabs -->
+          <div class="auth-tabs d-flex justify-content-center mb-4">
+            <button id="login-tab" class="auth-tab active">{% trans "Login" %}</button>
+            <button id="signup-tab" class="auth-tab">{% trans "Sign Up" %}</button>
+          </div>
+
+          <!-- Login Form -->
+          <form id="login-form" class="auth-form active" method="post" action="{% url 'auth' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="login">
+            <div class="mb-3">
+              <input type="text" name="username" class="form-control p-3"
+                     placeholder="{% trans 'Username or Email' %}" required>
+            </div>
+            <div class="mb-3">
+              <input type="password" name="password" class="form-control p-3"
+                     placeholder="{% trans 'Password' %}" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold">
+              {% trans "Login" %}
+            </button>
+          </form>
+
+          <!-- Signup Form -->
+          <form id="signup-form" class="auth-form" method="post" action="{% url 'auth' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="signup">
+            
+            <div class="mb-3">
+              <input type="text" name="username" class="form-control p-3"
+                     placeholder="{% trans 'Username' %}" required>
+            </div>
+            <div class="mb-3">
+              <input type="email" name="email" class="form-control p-3"
+                     placeholder="{% trans 'Email' %}" required>
+            </div>
+            <div class="mb-3">
+              <input type="password" name="password1" class="form-control p-3"
+                     placeholder="{% trans 'Password' %}" required>
+            </div>
+            <div class="mb-3">
+              <input type="password" name="password2" class="form-control p-3"
+                     placeholder="{% trans 'Confirm Password' %}" required>
+            </div>
+
+            <!-- Role Selection -->
+            <div class="mb-3">
+              <select name="role" class="form-select p-3" required>
+                <option value="student">{% trans "Student" %}</option>
+                <option value="instructor">{% trans "Instructor" %}</option>
+                <option value="course_provider">{% trans "Course Provider" %}</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold">
+              {% trans "Create Account" %}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="{% static 'js/auth.js' %}" defer></script>
+{% endblock %}

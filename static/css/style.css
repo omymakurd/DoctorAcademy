@@ -1,0 +1,252 @@
+:root {
+  --primary-color: #0D47A1;
+  --secondary-color: #1976D2;
+  --accent-color: #FFA000;
+  --bg-color: #F5F5F5;
+  --text-color: #212121;
+  --text-muted: #757575;
+  --navbar-height: 80px;
+  --radius: 12px;
+  --transition: all 0.3s ease;
+}
+
+/* ============================= */
+/*         GLOBAL STYLES         */
+/* ============================= */
+
+* {
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: "Segoe UI", Tahoma, Geneva, sans-serif;
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+a {
+  text-decoration: none;
+  color: var(--secondary-color);
+  transition: var(--transition);
+}
+
+a:hover {
+  color: var(--accent-color);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+button {
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+/* ============================= */
+/*           NAVBAR              */
+/* ============================= */
+
+/* ============================= */
+/*           NAVBAR              */
+/* ============================= */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: var(--navbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 2rem;
+  background-color: rgba(255, 255, 255, 0.98); /* خلفية فاتحة وواضحة */
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+  transition: var(--transition);
+  z-index: 1000;
+}
+
+.navbar.scrolled {
+  background-color: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--primary-color);
+  transition: var(--transition);
+}
+
+.navbar-brand:hover {
+  color: var(--accent-color);
+}
+
+.navbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.nav-link {
+  color: var(--text-color);
+  font-weight: 500;
+  transition: var(--transition);
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background-color: var(--accent-color);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--accent-color);
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-link.active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Buttons */
+.navbar .btn {
+  font-weight: 600;
+  border-radius: 8px;
+  transition: var(--transition);
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+}
+
+.btn-primary:hover {
+  background-color: var(--secondary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0,0,0,0.2);
+}
+
+
+.btn-accent {
+  background-color: var(--accent-color);
+  color: var(--text-color);
+}
+
+.btn-accent:hover {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+/* ============================= */
+/*           CONTENT             */
+/* ============================= */
+
+.main-content {
+  padding-top: var(--navbar-height);
+  min-height: 80vh;
+}
+
+/* ============================= */
+/*           FOOTER              */
+/* ============================= */
+
+footer {
+  background-color: #212529;
+  color: white;
+  padding: 40px 0 20px;
+  margin-top: 2rem;
+}
+
+footer .footer-top {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+footer h5 {
+  color: var(--accent-color);
+  margin-bottom: 1rem;
+}
+
+footer ul {
+  list-style: none;
+  padding: 0;
+}
+
+footer ul li {
+  margin-bottom: 0.5rem;
+}
+
+footer ul li a {
+  color: #ddd;
+  font-size: 0.95rem;
+}
+
+footer ul li a:hover {
+  color: var(--accent-color);
+}
+
+footer p {
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
+footer hr {
+  border: 0;
+  height: 1px;
+  background-color: rgba(255,255,255,0.15);
+  margin: 20px 0;
+}
+
+footer .footer-bottom {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+/* ============================= */
+/*         RESPONSIVE            */
+/* ============================= */
+
+@media (max-width: 992px) {
+  .navbar-nav {
+    display: none;
+  }
+  .navbar.scrolled .navbar-brand {
+    color: var(--primary-color);
+  }
+}
+
+@media (max-width: 768px) {
+  footer .footer-top {
+    flex-direction: column;
+    text-align: center;
+  }
+}

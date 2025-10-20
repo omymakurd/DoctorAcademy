@@ -1,0 +1,154 @@
+{% extends "dashboards/instructor_base.html" %}
+{% load static i18n %}
+
+{% block title %}Instructor Dashboard{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+  .chart-container {
+    background: white;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  table thead {
+    background-color: #0D47A1;
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Welcome, {{ user.username }}</h2>
+<div class="mb-4">
+  <a href="{% url 'add_basic_lecture' %}" class="btn btn-primary me-2">
+    <i class="bi bi-plus-circle"></i> Add Basic Lecture
+  </a>
+  <a href="{% url 'add_clinical_lecture' %}" class="btn btn-info">
+    <i class="bi bi-plus-circle"></i> Add Clinical Lecture
+  </a>
+</div>
+
+<!-- Cards -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="card p-3">
+      <h5>Courses</h5>
+      <h3>{{ courses_count }}</h3>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card p-3">
+      <h5>Lectures</h5>
+      <h3>{{ lectures_count }}</h3>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card p-3">
+      <h5>Students</h5>
+      <h3>{{ students_count }}</h3>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card p-3">
+      <h5>Case Studies</h5>
+      <h3>{{ cases_count }}</h3>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row">
+  <div class="col-lg-6 mb-4">
+    <div class="chart-container">
+      <canvas id="lecturesChart"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6 mb-4">
+    <div class="chart-container">
+      <canvas id="studentsChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="mt-4">
+  <h4>Recent Activity</h4>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Lecture</th>
+          <th>Status</th>
+          <th>Completed At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for progress in recent_progress %}
+        <tr>
+          <td>{{ progress.student.username }}</td>
+          <td>
+            {% if progress.basic_lecture %}
+              {{ progress.basic_lecture.title }}
+            {% else %}
+              {{ progress.clinical_lecture.title }}
+            {% endif %}
+          </td>
+          <td>{{ progress.status }}</td>
+          <td>{{ progress.completed_at|date:"d M Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="text-center text-muted">No recent activity.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Charts JS -->
+<script>
+const lecturesChart = new Chart(document.getElementById('lecturesChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ lecture_labels|safe }},
+    datasets: [{
+      label: 'Lectures Completed',
+      data: {{ lecture_data|safe }},
+      backgroundColor: '#FFA000'
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+
+const studentsChart = new Chart(document.getElementById('studentsChart'), {
+  type: 'line',
+  data: {
+    labels: {{ student_labels|safe }},
+    datasets: [{
+      label: 'Student Progress',
+      data: {{ student_data|safe }},
+      borderColor: '#0D47A1',
+      fill: false,
+      tension: 0.3
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+</script>
+{% endblock %}
