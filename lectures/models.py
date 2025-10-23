@@ -49,20 +49,6 @@ class Discipline(models.Model):
         return f"{self.system.name} - {self.get_name_display()}"
 
 
-class BasicLecture(models.Model):
-    discipline = models.ForeignKey('Discipline', on_delete=models.CASCADE, related_name='lectures')
-    title = models.CharField(max_length=255)
-    lecture_type = models.CharField(max_length=20, choices=[('recorded','Recorded Video'),('zoom','Live Zoom')])
-    video_file = models.FileField(upload_to='lectures/videos/', blank=True, null=True)
-    zoom_link = models.URLField(blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
-    instructor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='basic_lectures')
-    price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-    instructor_share = models.DecimalField(max_digits=5, decimal_places=2, default=50.0)  # نسبة أرباح المحاضر
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-
 # ========================
 # Clinical Sciences
 # ========================
@@ -75,21 +61,69 @@ class ClinicalSystem(models.Model):
         return self.name
 
 
+# ========================
+# Module
+# ========================
+class Module(models.Model):
+    instructor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='modules')
+    basic_system = models.ForeignKey(BasicSystem, on_delete=models.CASCADE, related_name='modules', null=True, blank=True)
+    clinical_system = models.ForeignKey(ClinicalSystem, on_delete=models.CASCADE, related_name='modules', null=True, blank=True)
+    thumbnail = models.ImageField(upload_to='modules/thumbnails/', blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    is_featured = models.BooleanField(default=False)
+
+    instructor_share = models.DecimalField(max_digits=5, decimal_places=2, default=50.0)
+    platform_share = models.DecimalField(max_digits=5, decimal_places=2, default=50.0)
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        system_name = self.basic_system.name if self.basic_system else (self.clinical_system.name if self.clinical_system else "No System")
+        return f"{system_name} - Module"
+
+
+# ========================
+# Lectures
+# ========================
+class BasicLecture(models.Model):
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='basic_lectures', null=True, blank=True)
+    discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE, related_name='lectures')
+    title = models.CharField(max_length=255)
+    lecture_type = models.CharField(max_length=20, choices=[('recorded','Recorded Video'),('zoom','Live Zoom')])
+    video_file = models.FileField(upload_to='lectures/videos/', blank=True, null=True)
+    zoom_link = models.URLField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    instructor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='basic_lectures')
+    instructor_share = models.DecimalField(max_digits=5, decimal_places=2, default=50.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
 class ClinicalLecture(models.Model):
-    system = models.ForeignKey('ClinicalSystem', on_delete=models.CASCADE, related_name='lectures')
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='clinical_lectures', null=True, blank=True)
     title = models.CharField(max_length=255)
     lecture_type = models.CharField(max_length=20, choices=[('recorded','Recorded Video'),('zoom','Live Zoom')])
     video_url = models.URLField(blank=True, null=True)
     zoom_link = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     instructor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='clinical_lectures')
-    price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     instructor_share = models.DecimalField(max_digits=5, decimal_places=2, default=50.0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.system.name} - {self.title}"
+        return f"{self.module.clinical_system.name if self.module and self.module.clinical_system else 'No System'} - {self.title}"
 
 
 # ========================
@@ -109,15 +143,11 @@ class InteractiveNote(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        if self.lecture_type == 'basic':
+        if self.lecture_type == 'basic' and self.basic_lecture:
             return f"Note by {self.student.username} on {self.basic_lecture.title}"
-        else:
+        elif self.lecture_type == 'clinical' and self.clinical_lecture:
             return f"Note by {self.student.username} on {self.clinical_lecture.title}"
-
-
-# ========================
-# Case Studies
-# ========================
+        return f"Note by {self.student.username}"
 
 
 # ========================
@@ -171,3 +201,7 @@ class LectureProgress(models.Model):
     status_choices = [('in_progress','In Progress'),('completed','Completed')]
     status = models.CharField(max_length=20, choices=status_choices, default='in_progress')
     completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        lecture_name = self.basic_lecture.title if self.basic_lecture else (self.clinical_lecture.title if self.clinical_lecture else "No Lecture")
+        return f"{self.student.username} - {lecture_name} - {self.status}"

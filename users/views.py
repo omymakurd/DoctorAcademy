@@ -90,7 +90,7 @@ def auth_view(request):
             else:
                 return redirect("home")
 
-    return render(request, "auth.html")
+    return render(request, "auth.html",{})
 
 
 def logout_view(request):

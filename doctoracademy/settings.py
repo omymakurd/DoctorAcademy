@@ -57,8 +57,10 @@ INSTALLED_APPS = [
     'cases',
     'lectures',
     'analytics',
-    'notification'
+    'notification',
+     'widget_tweaks',
 ]
+AUTH_USER_MODEL = "users.User"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -114,8 +116,9 @@ CACHES = {
     }
 }
 
-AUTH_USER_MODEL = 'users.User'
-
+LOGIN_URL = '/users/auth/'       # إعادة توجيه المستخدم غير المسجّل الدخول
+LOGOUT_REDIRECT_URL = '/users/auth/'  # بعد تسجيل الخروج
+LOGIN_REDIRECT_URL = '/'          # بعد تسجيل الدخول بنجاح
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

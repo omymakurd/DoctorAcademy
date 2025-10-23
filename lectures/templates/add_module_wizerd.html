@@ -1,0 +1,511 @@
+{% extends "dashboards/instructor_base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Module Wizard | Instructor Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+  <h2 class="fw-bold mb-4">🧭 Add Module Wizard</h2>
+
+  <!-- Wizard Tabs -->
+  <ul class="nav nav-tabs" id="wizardTabs" role="tablist">
+    <li class="nav-item">
+      <button class="nav-link active" id="step1-tab" data-bs-toggle="tab" data-bs-target="#step1" type="button">1️⃣
+        Module Info</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link disabled" id="step2-tab" data-bs-toggle="tab" data-bs-target="#step2" type="button">2️⃣
+        Add Lectures</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link disabled" id="step3-tab" data-bs-toggle="tab" data-bs-target="#step3" type="button">3️⃣
+        Quiz / Case Studies</button>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content border border-top-0 p-4 rounded-bottom shadow-sm bg-white" id="wizardContent">
+
+    <!-- STEP 1 -->
+ <div class="tab-pane fade show active" id="step1" role="tabpanel">
+  <form id="moduleForm" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- Module Type -->
+    <div class="mb-3">
+      <label class="form-label fw-bold">Module Type</label>
+      <select id="moduleType" class="form-select" name="module_type" required>
+        <option value="">-- Select type --</option>
+        <option value="basic">Basic</option>
+        <option value="clinical">Clinical</option>
+      </select>
+    </div>
+
+    <!-- System -->
+    <div class="mb-3">
+      <label class="form-label fw-bold">System</label>
+      <select id="moduleSystem" class="form-select" disabled>
+        <option value="">Select a type first...</option>
+      </select>
+    </div>
+
+    <!-- Module fields -->
+    <div id="module_rest">
+      <div class="mb-3">
+        <label for="{{ module_form.thumbnail.id_for_label }}" class="form-label fw-bold">Thumbnail</label>
+        {{ module_form.thumbnail|add_class:"form-control" }}
+      </div>
+
+      <div class="mb-3">
+        <label for="{{ module_form.description.id_for_label }}" class="form-label fw-bold">Description</label>
+        {{ module_form.description|add_class:"form-control" }}
+      </div>
+
+      <div class="mb-3">
+        <label for="{{ module_form.price.id_for_label }}" class="form-label fw-bold">Price</label>
+        {{ module_form.price|add_class:"form-control" }}
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit" class="btn btn-primary mt-3 w-100">Next → Add Lectures</button>
+
+    <!-- Hidden fields -->
+    <div id="hidden_systems" style="display:none;">
+      {{ module_form.basic_system }}
+      {{ module_form.clinical_system }}
+      {{ module_form.instructor_share }}
+      {{ module_form.platform_share }}
+      {{ module_form.is_featured }}
+      {{ module_form.status }}
+    </div>
+  </form>
+
+  <div id="moduleMsg" class="mt-3"></div>
+</div>
+
+    <!-- STEP 2 -->
+  <div class="tab-pane fade" id="step2" role="tabpanel">
+    <form id="lectureForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% load widget_tweaks %}
+
+        {% for field in lecture_form %}
+        <div class="mb-3">
+            <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+            {{ field|add_class:"form-control" }}
+            {% if field.help_text %}
+                <small class="text-muted">{{ field.help_text }}</small>
+            {% endif %}
+            {% for error in field.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-success mt-2 w-100">Save Lecture</button>
+    </form>
+
+    <div id="lectureMsg" class="mt-3"></div>
+
+    <div class="mt-4">
+        <h5 class="fw-bold">📚 Lectures Added</h5>
+        <ul id="lectureList" class="list-group small"></ul>
+    </div>
+
+    <button id="toStep3" class="btn btn-secondary mt-4 w-100" disabled>Next → Quiz / Case Studies</button>
+</div>
+
+
+    <!-- STEP 3 -->
+    <div class="tab-pane fade" id="step3" role="tabpanel">
+      <h5 class="fw-bold mb-3">🧩 Add Quiz / Case Study</h5>
+
+      <ul class="nav nav-tabs mb-3" id="quizCaseTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="quiz-tab" data-bs-toggle="tab" data-bs-target="#quizTab" type="button" role="tab">Quiz</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="case-tab" data-bs-toggle="tab" data-bs-target="#caseTab" type="button" role="tab">Case Study</button>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+        <!-- QUIZ TAB -->
+        <div class="tab-pane fade show active" id="quizTab" role="tabpanel">
+          <div class="mb-3">
+            <label for="lectureSelectQuiz" class="form-label">Select Lecture</label>
+            <select id="lectureSelectQuiz" class="form-select"></select>
+          </div>
+
+          <form id="quizForm">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-bold">Quiz Title</label>
+              <input type="text" name="title" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Create Quiz</button>
+          </form>
+
+          <div id="quizMsg" class="mt-3"></div>
+
+          <!-- ADD QUESTIONS -->
+          <div id="questionSection" class="mt-4" style="display:none;">
+            <hr>
+            <h5 class="fw-bold">➕ Add Questions</h5>
+            <form id="questionForm">
+              {% csrf_token %}
+              <div class="mb-2">
+                <label class="form-label">Question Text</label>
+                <input type="text" name="text" class="form-control" required>
+              </div>
+
+              <div id="choicesContainer" class="mb-2">
+                <label class="form-label">Choices</label>
+                <div class="input-group mb-1">
+                  <input type="text" class="form-control" name="choices[]" placeholder="Choice 1">
+                  <button type="button" class="btn btn-outline-success mark-correct">✓</button>
+                </div>
+              </div>
+
+              <button type="button" id="addChoiceBtn" class="btn btn-sm btn-outline-secondary mb-3">Add Choice</button>
+              <input type="hidden" name="correct_choice" id="correctChoiceInput">
+
+              <div>
+                <label class="form-label">Correct Answer (optional)</label>
+                <input type="text" name="correct_answer" class="form-control">
+              </div>
+
+              <button type="submit" class="btn btn-success w-100 mt-3">Save Question</button>
+            </form>
+
+            <ul id="questionList" class="list-group mt-3 small"></ul>
+          </div>
+        </div>
+
+        <!-- CASE STUDY TAB -->
+   <!-- CASE STUDY TAB -->
+<div class="tab-pane fade" id="caseTab" role="tabpanel">
+  <div class="mb-3">
+    <label for="lectureSelectCase" class="form-label fw-bold">Select Lecture</label>
+    <select id="lectureSelectCase" class="form-select"></select>
+  </div>
+
+  <form id="caseForm" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label fw-bold">Case Study Title</label>
+      <input type="text" name="title" class="form-control" placeholder="Enter case title..." required>
+    </div>
+
+    <!-- 🟢 حُذف القسمين: Discipline Section & Lecture Type -->
+
+    <div class="mb-3">
+      <label class="form-label fw-bold">Symptoms</label>
+      <textarea name="symptoms" class="form-control" rows="3" placeholder="Describe patient symptoms..." required></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-bold">Analysis / Discussion</label>
+      <textarea name="analysis" class="form-control" rows="4" placeholder="Write your analysis or findings..." required></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-bold">Description (Optional)</label>
+      <textarea name="description" class="form-control" rows="3" placeholder="Additional notes..."></textarea>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label fw-bold">Upload Video (optional)</label>
+        <input type="file" name="video_file" class="form-control" accept="video/*">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label fw-bold">or Video URL (YouTube, Vimeo...)</label>
+        <input type="url" name="video_url" class="form-control" placeholder="https://...">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-bold">Attach File (optional)</label>
+      <input type="file" name="attachment" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100">💾 Save Case Study</button>
+  </form>
+
+  <div id="caseMsg" class="mt-3"></div>
+</div>
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const moduleType = document.getElementById('moduleType');
+  const moduleSystem = document.getElementById('moduleSystem');
+  const hiddenContainer = document.getElementById('hidden_systems');
+  const moduleForm = document.getElementById('moduleForm');
+  const moduleMsg = document.getElementById('moduleMsg');
+  const step2Tab = document.getElementById('step2-tab');
+  const lectureForm = document.getElementById('lectureForm');
+  const lectureList = document.getElementById('lectureList');
+  const toStep3Btn = document.getElementById('toStep3');
+
+  const basicSelectHidden = hiddenContainer.querySelector('select[name="basic_system"]');
+  const clinicalSelectHidden = hiddenContainer.querySelector('select[name="clinical_system"]');
+  const disciplineSelect = lectureForm.querySelector('#id_discipline');
+
+  function alertBox(type, message) {
+    return `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+    ${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+  }
+
+  function parseErrors(errors) {
+    if (typeof errors === 'string') return errors;
+    return Object.entries(errors).map(([k, v]) => `<strong>${k}</strong>: ${v}`).join('<br>');
+  }
+
+  function populateSystemSelect(hiddenSelect) {
+    if (!hiddenSelect) return;
+    moduleSystem.innerHTML = '<option value="">-- Select System --</option>';
+    Array.from(hiddenSelect.options).forEach(opt => {
+      if (opt.value) {
+        const newOpt = document.createElement('option');
+        newOpt.value = opt.value;
+        newOpt.textContent = opt.textContent;
+        moduleSystem.appendChild(newOpt);
+      }
+    });
+    moduleSystem.disabled = false;
+  }
+
+  function populateDisciplines(systemId) {
+    if (!disciplineSelect || !systemId) return;
+    fetch(`/lectures/ajax/load-disciplines/?system_id=${systemId}`)
+      .then(res => res.json())
+      .then(data => {
+        disciplineSelect.innerHTML = '<option value="">-- Select Discipline --</option>';
+        data.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = d.name;
+          disciplineSelect.appendChild(opt);
+        });
+      });
+  }
+
+  moduleType.addEventListener('change', function () {
+    moduleSystem.innerHTML = '<option value="">Select a type first...</option>';
+    moduleSystem.disabled = true;
+    if (this.value === 'basic') populateSystemSelect(basicSelectHidden);
+    else if (this.value === 'clinical') populateSystemSelect(clinicalSelectHidden);
+  });
+
+  moduleSystem.addEventListener('change', function () {
+    if (moduleType.value === 'basic') populateDisciplines(this.value);
+    else if (disciplineSelect) {
+        disciplineSelect.innerHTML = '<option value="none">-- Clinical does not use disciplines --</option>';
+
+    }
+  });
+
+  moduleForm.addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const type = moduleType.value;
+  const systemId = moduleSystem.value;
+  if (!type || !systemId) {
+    moduleMsg.innerHTML = alertBox('danger', 'Please select both module type and system.');
+    return;
+  }
+
+  const fd = new FormData(moduleForm);
+
+  // ✅ حطي الكود هنا بعد تعريف fd
+  const disciplineField = fd.get('discipline');
+  if (disciplineField === 'none') {
+    fd.set('discipline', '');
+  }
+
+  fd.delete('basic_system');
+  fd.delete('clinical_system');
+  if (type === 'basic') fd.append('basic_system', systemId);
+  else fd.append('clinical_system', systemId);
+
+
+    const res = await fetch("{% url 'add_module' %}", { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.success) {
+      moduleMsg.innerHTML = alertBox('success', '✅ Module saved successfully!');
+      step2Tab.classList.remove('disabled');
+      new bootstrap.Tab(step2Tab).show();
+      window.moduleId = data.module_id;
+
+      const moduleField = lectureForm.querySelector('[name="module"]');
+      if (moduleField) {
+        if (moduleField.tagName.toLowerCase() === 'select') {
+          moduleField.innerHTML = '';
+          const opt = document.createElement('option');
+          opt.value = data.module_id;
+          opt.textContent = data.module_name || 'New Module';
+          moduleField.appendChild(opt);
+          moduleField.value = data.module_id;
+        } else {
+          moduleField.value = data.module_id;
+        }
+      } else {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'module';
+        hidden.value = data.module_id;
+        lectureForm.appendChild(hidden);
+      }
+    } else {
+      moduleMsg.innerHTML = alertBox('danger', parseErrors(data.errors || 'Unknown error'));
+    }
+  });
+
+  lectureForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const fd = new FormData(lectureForm);
+    const res = await fetch("{% url 'add_lecture' module_id=0 %}".replace('0', window.moduleId || 0), { method: 'POST', body: fd });
+    const data = await res.json();
+    const msg = document.getElementById('lectureMsg');
+    if (data.success) {
+      msg.innerHTML = alertBox('success', '🎉 Lecture added successfully!');
+      addLectureToList(fd.get('title') || 'Untitled', data.lecture_id);
+      toStep3Btn.disabled = false;
+    } else {
+      msg.innerHTML = alertBox('danger', parseErrors(data.errors));
+    }
+  });
+
+  function addLectureToList(title, id) {
+    const item = document.createElement('li');
+    item.className = 'list-group-item d-flex justify-content-between align-items-center';
+    item.innerHTML = `${title} <span class="badge bg-secondary">${id}</span>`;
+    lectureList.appendChild(item);
+
+    const selectQuiz = document.getElementById('lectureSelectQuiz');
+    const selectCase = document.getElementById('lectureSelectCase');
+    [selectQuiz, selectCase].forEach(sel => {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.text = title;
+      sel.add(opt);
+    });
+  }
+
+  toStep3Btn.addEventListener('click', () => {
+    document.getElementById('step3-tab').classList.remove('disabled');
+    new bootstrap.Tab(document.getElementById('step3-tab')).show();
+  });
+
+  // ==== QUIZ CREATION ====
+  let currentQuizId = null;
+
+  document.getElementById('quizForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const lectureId = document.getElementById('lectureSelectQuiz').value;
+    const fd = new FormData(e.target);
+
+    const res = await fetch(`/lectures/instructor/lecture/${lectureId}/quiz/add/`, { method: 'POST', body: fd });
+    const data = await res.json();
+    const quizMsg = document.getElementById('quizMsg');
+
+    if (data.success) {
+      currentQuizId = data.quiz_id;
+      quizMsg.innerHTML = alertBox('success', 'Quiz created successfully!');
+      document.getElementById('questionSection').style.display = 'block';
+    } else {
+      quizMsg.innerHTML = alertBox('danger', parseErrors(data.errors));
+    }
+  });
+
+  const questionForm = document.getElementById('questionForm');
+  const choicesContainer = document.getElementById('choicesContainer');
+  const addChoiceBtn = document.getElementById('addChoiceBtn');
+  const correctChoiceInput = document.getElementById('correctChoiceInput');
+  const questionList = document.getElementById('questionList');
+
+  addChoiceBtn.addEventListener('click', () => {
+    const index = choicesContainer.querySelectorAll('.input-group').length + 1;
+    const div = document.createElement('div');
+    div.className = 'input-group mb-1';
+    div.innerHTML = `
+      <input type="text" class="form-control" name="choices[]" placeholder="Choice ${index}">
+      <button type="button" class="btn btn-outline-success mark-correct">✓</button>
+    `;
+    choicesContainer.appendChild(div);
+  });
+
+  choicesContainer.addEventListener('click', (e) => {
+    if (e.target.classList.contains('mark-correct')) {
+      choicesContainer.querySelectorAll('.mark-correct').forEach(btn => btn.classList.remove('btn-success'));
+      e.target.classList.add('btn-success');
+      const index = Array.from(choicesContainer.querySelectorAll('.input-group')).indexOf(e.target.closest('.input-group'));
+      correctChoiceInput.value = index;
+    }
+  });
+
+questionForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentQuizId) {
+    alert('Please create a quiz first!');
+    return;
+  }
+
+  const fd = new FormData(questionForm);
+
+  const res = await fetch(`/lectures/instructor/quiz/${currentQuizId}/question/add/`, {
+    method: 'POST',
+    body: fd
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    const li = document.createElement('li');
+    li.className = 'list-group-item';
+    li.textContent = fd.get('text');
+    questionList.appendChild(li);
+    questionForm.reset();
+    correctChoiceInput.value = '';
+    choicesContainer.innerHTML = `
+      <label class="form-label">Choices</label>
+      <div class="input-group mb-1">
+        <input type="text" class="form-control" name="choices[]" placeholder="Choice 1">
+        <button type="button" class="btn btn-outline-success mark-correct">✓</button>
+      </div>`;
+  } else {
+    alertBox('danger', parseErrors(data.errors));
+  }
+});
+
+
+  // ==== CASE STUDY CREATION ====
+  document.getElementById('caseForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const lectureId = document.getElementById('lectureSelectCase').value;
+    const fd = new FormData(e.target);
+
+    const res = await fetch(`/lectures/instructor/lecture/${lectureId}/case/add/`, { method: 'POST', body: fd });
+    const data = await res.json();
+    const caseMsg = document.getElementById('caseMsg');
+
+    if (data.success) {
+      caseMsg.innerHTML = alertBox('success', 'Case Study saved successfully!');
+      e.target.reset();
+    } else {
+      caseMsg
+      caseMsg.innerHTML = alertBox('danger', parseErrors(data.errors));
+    }
+  });
+});
+</script>
+{% endblock %}

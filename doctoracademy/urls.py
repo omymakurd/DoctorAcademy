@@ -31,6 +31,7 @@ urlpatterns = [
     path('notification/', include('notification.urls')),
     path('ai_chatbot/', include('ai_chatbot.urls')),
     path('users/', include('users.urls')),
+
 ]
 urlpatterns += [
     path('i18n/', include('django.conf.urls.i18n')),
