@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">{% if create %}Add New Unit{% else %}Edit Unit{% endif %} for "{{ course.title }}"</h2>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form|crispy }}
+
+        <small class="form-text text-muted mb-3">
+            For <strong>Video/PDF/Zoom</strong> units, you can either upload a file or provide an external URL.  
+            Text units do not require a file or URL.
+        </small>
+
+        {% if form.instance.content_file %}
+            <div class="mb-2">
+                <strong>Current File:</strong>
+                <a href="{{ form.instance.content_file.url }}" target="_blank">
+                    {{ form.instance.content_file.name|cut:"course_content/" }}
+                </a>
+            </div>
+        {% endif %}
+
+        {% if form.instance.content_url %}
+            <div class="mb-2">
+                <strong>Current URL:</strong>
+                <a href="{{ form.instance.content_url }}" target="_blank">{{ form.instance.content_url }}</a>
+            </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-success mt-3">
+            {% if create %}Create{% else %}Save{% endif %}
+        </button>
+        <a href="{% url 'courses:course-units' course.id %}" class="btn btn-secondary mt-3">Cancel</a>
+    </form>
+</div>
+{% endblock %}

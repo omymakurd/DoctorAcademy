@@ -34,7 +34,7 @@ def auth_view(request):
                 elif user.role == "student":
                     return redirect("student_dashboard")
                 elif user.role == "course_provider":
-                    return redirect("course_provider_dashboard")
+                    return redirect("courses:course_provider_dashboard")
                 else:
                     return redirect("home")
             else:
@@ -86,7 +86,8 @@ def auth_view(request):
             elif role == "student":
                 return redirect("student_dashboard")
             elif role == "course_provider":
-                return redirect("course_provider_dashboard")
+                return redirect("courses:course_provider_dashboard")
+
             else:
                 return redirect("home")
 

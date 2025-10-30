@@ -5,6 +5,14 @@
 {% block title %}Module Wizard | Instructor Dashboard{% endblock %}
 
 {% block content %}
+<style>
+.zoom-field:required {
+  border-left: 3px solid #dc3545 !important;
+}
+.zoom-field:valid {
+  border-left: 3px solid #198754 !important;
+}
+</style>
 <div class="container mt-4 mb-5">
   <h2 class="fw-bold mb-4">🧭 Add Module Wizard</h2>
 
@@ -87,27 +95,246 @@
 
     <!-- STEP 2 -->
   <div class="tab-pane fade" id="step2" role="tabpanel">
-    <form id="lectureForm" enctype="multipart/form-data">
-        {% csrf_token %}
-        {% load widget_tweaks %}
+   <form id="lectureForm" enctype="multipart/form-data">
+  {% csrf_token %}
+  {% load widget_tweaks %}
 
-        {% for field in lecture_form %}
-        <div class="mb-3">
-            <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-            {{ field|add_class:"form-control" }}
-            {% if field.help_text %}
-                <small class="text-muted">{{ field.help_text }}</small>
-            {% endif %}
-            {% for error in field.errors %}
-                <div class="text-danger small">{{ error }}</div>
-            {% endfor %}
-        </div>
-        {% endfor %}
+  {% for field in lecture_form %}
+  <div class="mb-3">
+      <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+      {{ field|add_class:"form-control" }}
+      {% if field.help_text %}
+          <small class="text-muted">{{ field.help_text }}</small>
+      {% endif %}
+      {% for error in field.errors %}
+          <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+  </div>
+  {% endfor %}
 
-        <button type="submit" class="btn btn-success mt-2 w-100">Save Lecture</button>
-    </form>
+  <!-- 🔵 قسم Zoom الآمن -->
+<div id="zoomSection" class="border rounded p-4 mt-4 mb-3 bg-light" style="display: none;">
+  <h5 class="fw-bold mb-3">🎥 إعدادات البث المباشر الآمن</h5>
+  
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label for="id_zoom_start_time" class="form-label fw-bold">وقت البدء <span class="text-danger">*</span></label>
+      <input type="datetime-local" id="id_zoom_start_time" name="zoom_start_time" 
+             class="form-control zoom-field" required placeholder="YYYY-MM-DDTHH:MM">
+      <small class="text-muted">اختر تاريخ ووقت البدء (يجب أن يكون في المستقبل)</small>
+    </div>
+    
+    <div class="col-md-6">
+      <label for="id_zoom_duration" class="form-label fw-bold">المدة (دقائق) <span class="text-danger">*</span></label>
+      <input type="number" id="id_zoom_duration" name="zoom_duration" 
+             class="form-control zoom-field" value="60" min="15" max="480" step="15" required>
+      <small class="text-muted">المدة بالدقائق (15-480)</small>
+    </div>
+  </div>
 
-    <div id="lectureMsg" class="mt-3"></div>
+  <div class="mt-3 p-3 bg-info bg-opacity-10 rounded border">
+    <h6 class="fw-bold text-info">💡 ملاحظة هامة:</h6>
+    <p class="small mb-0">سيتم إنشاء اجتماع Zoom تلقائياً عند حفظ المحاضرة. تأكد من صحة البيانات قبل الحفظ.</p>
+  </div>
+</div>
+
+<!-- زر Debug للاختبار -->
+<div class="mt-3">
+  <button type="button" id="debugZoom" class="btn btn-warning btn-sm">🐛 Debug Zoom Values</button>
+</div>
+
+  <button type="submit" class="btn btn-success mt-2 w-100">Save Lecture</button>
+</form>
+
+   
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // 🔵 إصلاح مشكلة datetime-local
+  const zoomStartTimeField = document.getElementById('id_zoom_start_time');
+  
+  if (zoomStartTimeField) {
+    // تحويل القيمة إلى التنسيق الصحيح
+    zoomStartTimeField.addEventListener('change', function() {
+      if (this.value) {
+        console.log('🕒 Zoom Start Time Selected:', this.value);
+      }
+    });
+
+    // التحقق من القيمة عند التحميل
+    if (zoomStartTimeField.value) {
+      console.log('🕒 Existing Zoom Start Time:', zoomStartTimeField.value);
+    }
+  }
+
+  // تحسين تجربة datetime-local (مصحح)
+  function enhanceDateTimeLocal() {
+    const zoomStartTime = document.getElementById('id_zoom_start_time');
+    
+    if (zoomStartTime) {
+      // تعيين الحد الأدنى (الآن + 30 دقيقة)
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 30);
+      zoomStartTime.min = now.toISOString().slice(0, 16);
+      
+      // 🚫 إزالة القيمة الافتراضية الثابتة - دع المستخدم يختار
+      // لا تضف قيمة افتراضية تلقائياً
+      
+      // إضافة placeholder
+      zoomStartTime.placeholder = "YYYY-MM-DDTHH:MM";
+      
+      // عرض الوقت الحالي للمساعدة
+      const timeHelper = document.createElement('div');
+      timeHelper.className = 'text-info small mt-1';
+      timeHelper.id = 'timeHelper';
+      timeHelper.innerHTML = `⏰ الوقت الحالي: <strong>${new Date().toLocaleString('ar-EG')}</strong>`;
+      
+      zoomStartTime.parentNode.appendChild(timeHelper);
+      
+      // تحديث الوقت كل دقيقة
+      setInterval(() => {
+        const currentTime = new Date();
+        timeHelper.innerHTML = `⏰ الوقت الحالي: <strong>${currentTime.toLocaleString('ar-EG')}</strong>`;
+      }, 60000);
+      
+      // مراقبة التغييرات
+      zoomStartTime.addEventListener('input', function() {
+        console.log('📅 DateTime changed:', this.value);
+        
+        // التحقق من أن الوقت في المستقبل
+        if (this.value) {
+          const selectedTime = new Date(this.value);
+          const now = new Date();
+          
+          if (selectedTime <= now) {
+            timeHelper.innerHTML = `❌ <strong>تحذير:</strong> الوقت المختار في الماضي!`;
+            timeHelper.className = 'text-danger small mt-1';
+          } else {
+            const diffMinutes = Math.round((selectedTime - now) / (1000 * 60));
+            timeHelper.innerHTML = `✅ الوقت المختار صحيح (بعد ${diffMinutes} دقيقة)`;
+            timeHelper.className = 'text-success small mt-1';
+          }
+        }
+      });
+    }
+  }
+
+  // ✅ استدعاء الدالة مرة واحدة فقط
+  enhanceDateTimeLocal();
+
+  const typeField = document.querySelector("#id_lecture_type");
+  const videoFileField = document.querySelector("#id_video_file")?.closest(".mb-3");
+  const videoUrlField = document.querySelector("#id_video_url")?.closest(".mb-3");
+  const zoomSection = document.getElementById("zoomSection");
+  const zoomStartTime = document.getElementById('id_zoom_start_time');
+  const zoomDuration = document.getElementById('id_zoom_duration');
+  
+  if (zoomStartTime && zoomDuration) {
+    console.log('✅ Zoom fields are properly initialized');
+    
+    // تعيين الحد الأدنى للتاريخ
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 30);
+    zoomStartTime.min = now.toISOString().slice(0, 16);
+    
+    // تعيين القيم الافتراضية إذا كانت فارغة
+    if (!zoomDuration.value) {
+      zoomDuration.value = 60;
+    }
+  } else {
+    console.log('❌ Zoom fields not found');
+  }
+
+  // ✅ دالة التحكم في الحقول - النسخة المحسنة
+  function updateLectureTypeFields() {
+    if (!typeField) return;
+    const value = typeField.value?.toLowerCase();
+    
+    console.log('🔍 Lecture Type Changed:', value);
+
+    // إخفاء جميع الحقول أولاً
+    if (videoFileField) videoFileField.style.display = "none";
+    if (videoUrlField) videoUrlField.style.display = "none";
+    if (zoomSection) zoomSection.style.display = "none";
+
+    // 🟢 إلغاء required من جميع حقول Zoom
+    const zoomFields = document.querySelectorAll('.zoom-field');
+    zoomFields.forEach(field => {
+      field.required = false;
+    });
+
+    // 🎥 حالة الفيديو المسجل
+    if (value.includes("video") || value.includes("recorded") || value.includes("upload")) {
+      console.log('🎥 Showing video fields');
+      if (videoFileField) videoFileField.style.display = "block";
+      if (videoUrlField) videoUrlField.style.display = "block";
+    }
+    // 🔵 حالة الزوم المباشر
+    else if (value.includes("zoom")) {
+      console.log('🔵 Showing Zoom fields');
+      if (zoomSection) {
+        zoomSection.style.display = "block";
+        
+        // 🟢 جعل الحقول مطلوبة فقط عندما تكون ظاهرة
+        const zoomStartTime = document.getElementById('id_zoom_start_time');
+        const zoomDuration = document.getElementById('id_zoom_duration');
+        
+        if (zoomStartTime) zoomStartTime.required = true;
+        if (zoomDuration) zoomDuration.required = true;
+      }
+    }
+  }
+
+  updateLectureTypeFields();
+
+  // ✅ عند تغيير نوع المحاضرة
+  typeField?.addEventListener("change", updateLectureTypeFields);
+
+  // زر Debug محسن للاختبار
+  document.getElementById('debugZoom')?.addEventListener('click', function() {
+    const form = document.getElementById('lectureForm');
+    const formData = new FormData(form);
+    
+    const lectureType = document.querySelector("#id_lecture_type").value;
+    const zoomStartTimeInput = document.getElementById('id_zoom_start_time');
+    const zoomDurationInput = document.getElementById('id_zoom_duration');
+    
+    const zoomStartTime = zoomStartTimeInput.value;
+    const zoomDuration = zoomDurationInput.value;
+    
+    console.log('🐛 Detailed Debug Information:');
+    console.log('📝 Lecture Type:', lectureType);
+    console.log('🕒 Zoom Start Time:', zoomStartTime);
+    console.log('⏱️ Zoom Duration:', zoomDuration);
+    console.log('🔍 Input Properties:', {
+      value: zoomStartTimeInput.value,
+      type: zoomStartTimeInput.type,
+      min: zoomStartTimeInput.min,
+      max: zoomStartTimeInput.max
+    });
+    console.log('📦 FormData Zoom Values:', {
+      startTime: formData.get('zoom_start_time'),
+      duration: formData.get('zoom_duration')
+    });
+    
+    // اختبار الـ Date object
+    if (zoomStartTime) {
+      const testDate = new Date(zoomStartTime);
+      console.log('📅 Date Object Test:', {
+        isoString: testDate.toISOString(),
+        localString: testDate.toLocaleString(),
+        isValid: !isNaN(testDate.getTime())
+      });
+    }
+    
+    alert(`🐛 Debug Information:
+📝 Lecture Type: ${lectureType}
+🕒 Zoom Start Time: ${zoomStartTime || 'EMPTY'}
+⏱️ Zoom Duration: ${zoomDuration}
+✅ Valid: ${zoomStartTime && zoomDuration ? 'YES' : 'NO'}`
+    );
+  });
+});
+</script>
 
     <div class="mt-4">
         <h5 class="fw-bold">📚 Lectures Added</h5>
@@ -116,7 +343,6 @@
 
     <button id="toStep3" class="btn btn-secondary mt-4 w-100" disabled>Next → Quiz / Case Studies</button>
 </div>
-
 
     <!-- STEP 3 -->
     <div class="tab-pane fade" id="step3" role="tabpanel">
@@ -185,61 +411,56 @@
         </div>
 
         <!-- CASE STUDY TAB -->
-   <!-- CASE STUDY TAB -->
-<div class="tab-pane fade" id="caseTab" role="tabpanel">
-  <div class="mb-3">
-    <label for="lectureSelectCase" class="form-label fw-bold">Select Lecture</label>
-    <select id="lectureSelectCase" class="form-select"></select>
-  </div>
+        <div class="tab-pane fade" id="caseTab" role="tabpanel">
+          <div class="mb-3">
+            <label for="lectureSelectCase" class="form-label fw-bold">Select Lecture</label>
+            <select id="lectureSelectCase" class="form-select"></select>
+          </div>
 
-  <form id="caseForm" enctype="multipart/form-data">
-    {% csrf_token %}
+          <form id="caseForm" enctype="multipart/form-data">
+            {% csrf_token %}
 
-    <div class="mb-3">
-      <label class="form-label fw-bold">Case Study Title</label>
-      <input type="text" name="title" class="form-control" placeholder="Enter case title..." required>
-    </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Case Study Title</label>
+              <input type="text" name="title" class="form-control" placeholder="Enter case title..." required>
+            </div>
 
-    <!-- 🟢 حُذف القسمين: Discipline Section & Lecture Type -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Symptoms</label>
+              <textarea name="symptoms" class="form-control" rows="3" placeholder="Describe patient symptoms..." required></textarea>
+            </div>
 
-    <div class="mb-3">
-      <label class="form-label fw-bold">Symptoms</label>
-      <textarea name="symptoms" class="form-control" rows="3" placeholder="Describe patient symptoms..." required></textarea>
-    </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Analysis / Discussion</label>
+              <textarea name="analysis" class="form-control" rows="4" placeholder="Write your analysis or findings..." required></textarea>
+            </div>
 
-    <div class="mb-3">
-      <label class="form-label fw-bold">Analysis / Discussion</label>
-      <textarea name="analysis" class="form-control" rows="4" placeholder="Write your analysis or findings..." required></textarea>
-    </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Description (Optional)</label>
+              <textarea name="description" class="form-control" rows="3" placeholder="Additional notes..."></textarea>
+            </div>
 
-    <div class="mb-3">
-      <label class="form-label fw-bold">Description (Optional)</label>
-      <textarea name="description" class="form-control" rows="3" placeholder="Additional notes..."></textarea>
-    </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Upload Video (optional)</label>
+                <input type="file" name="video_file" class="form-control" accept="video/*">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">or Video URL (YouTube, Vimeo...)</label>
+                <input type="url" name="video_url" class="form-control" placeholder="https://...">
+              </div>
+            </div>
 
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label fw-bold">Upload Video (optional)</label>
-        <input type="file" name="video_file" class="form-control" accept="video/*">
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label fw-bold">or Video URL (YouTube, Vimeo...)</label>
-        <input type="url" name="video_url" class="form-control" placeholder="https://...">
-      </div>
-    </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Attach File (optional)</label>
+              <input type="file" name="attachment" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+            </div>
 
-    <div class="mb-3">
-      <label class="form-label fw-bold">Attach File (optional)</label>
-      <input type="file" name="attachment" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-    </div>
+            <button type="submit" class="btn btn-primary w-100">💾 Save Case Study</button>
+          </form>
 
-    <button type="submit" class="btn btn-primary w-100">💾 Save Case Study</button>
-  </form>
-
-  <div id="caseMsg" class="mt-3"></div>
-</div>
-
-
+          <div id="caseMsg" class="mt-3"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -311,32 +532,33 @@ document.addEventListener('DOMContentLoaded', function () {
     if (moduleType.value === 'basic') populateDisciplines(this.value);
     else if (disciplineSelect) {
         disciplineSelect.innerHTML = '<option value="none">-- Clinical does not use disciplines --</option>';
-
     }
   });
 
+  // ✅ دالة ONE فقط لحفظ الموديول - بدون تكرار
   moduleForm.addEventListener('submit', async function (e) {
-  e.preventDefault();
-  const type = moduleType.value;
-  const systemId = moduleSystem.value;
-  if (!type || !systemId) {
-    moduleMsg.innerHTML = alertBox('danger', 'Please select both module type and system.');
-    return;
-  }
+    e.preventDefault();
+    const type = moduleType.value;
+    const systemId = moduleSystem.value;
+    if (!type || !systemId) {
+      moduleMsg.innerHTML = alertBox('danger', 'Please select both module type and system.');
+      return;
+    }
 
-  const fd = new FormData(moduleForm);
+    const fd = new FormData(moduleForm);
 
-  // ✅ حطي الكود هنا بعد تعريف fd
-  const disciplineField = fd.get('discipline');
-  if (disciplineField === 'none') {
-    fd.set('discipline', '');
-  }
+    // ✅ التصحيح: التحقق من وجود الحقل أولاً
+    if (fd.has('discipline')) {
+      const disciplineField = fd.get('discipline');
+      if (disciplineField === 'none') {
+        fd.set('discipline', '');
+      }
+    }
 
-  fd.delete('basic_system');
-  fd.delete('clinical_system');
-  if (type === 'basic') fd.append('basic_system', systemId);
-  else fd.append('clinical_system', systemId);
-
+    fd.delete('basic_system');
+    fd.delete('clinical_system');
+    if (type === 'basic') fd.append('basic_system', systemId);
+    else fd.append('clinical_system', systemId);
 
     const res = await fetch("{% url 'add_module' %}", { method: 'POST', body: fd });
     const data = await res.json();
@@ -370,18 +592,149 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // ✅ دالة ONE فقط لحفظ المحاضرة - مع Zoom المصحح تماماً
   lectureForm.addEventListener('submit', async function (e) {
     e.preventDefault();
+    
+    // ✅ التحقق من وجود moduleId
+    if (!window.moduleId) {
+      alert('❌ يرجى حفظ معلومات الموديول أولاً قبل إضافة المحاضرات');
+      return;
+    }
+    
     const fd = new FormData(lectureForm);
-    const res = await fetch("{% url 'add_lecture' module_id=0 %}".replace('0', window.moduleId || 0), { method: 'POST', body: fd });
-    const data = await res.json();
-    const msg = document.getElementById('lectureMsg');
-    if (data.success) {
-      msg.innerHTML = alertBox('success', '🎉 Lecture added successfully!');
-      addLectureToList(fd.get('title') || 'Untitled', data.lecture_id);
-      toStep3Btn.disabled = false;
-    } else {
-      msg.innerHTML = alertBox('danger', parseErrors(data.errors));
+    
+    // ✅ تحقق يدوي من بيانات Zoom
+    const lectureType = document.querySelector("#id_lecture_type").value;
+    const isZoomLecture = lectureType && lectureType.toLowerCase().includes('zoom');
+    
+    console.log('🔍 Lecture Type:', lectureType, 'isZoom:', isZoomLecture);
+    
+    if (isZoomLecture) {
+      const zoomStartTimeInput = document.getElementById('id_zoom_start_time');
+      const zoomDurationInput = document.getElementById('id_zoom_duration');
+      
+      const zoomStartTime = zoomStartTimeInput.value;
+      const zoomDuration = zoomDurationInput.value;
+      
+      console.log('🔍 Zoom Values (Direct from inputs):', {
+        startTime: zoomStartTime,
+        duration: zoomDuration,
+        startTimeInputValue: zoomStartTimeInput.value,
+        durationInputValue: zoomDurationInput.value
+      });
+      
+      // ✅ التحقق من البيانات المطلوبة
+      if (!zoomStartTime || !zoomDuration) {
+        alert('❌ يرجى إدخال وقت البدء والمدة لمحاضرة Zoom');
+        
+        // إظهار الحقول المطلوبة
+        if (!zoomStartTime) {
+          zoomStartTimeInput.style.borderColor = 'red';
+          zoomStartTimeInput.focus();
+        }
+        if (!zoomDuration) {
+          zoomDurationInput.style.borderColor = 'red';
+        }
+        
+        return;
+      }
+      
+      // 🌍 تحقق شامل من التوقيت الزمني
+      const startTime = new Date(zoomStartTime);
+      const now = new Date();
+      
+      console.log('🌍 TIMEZONE DEBUG:', {
+        rawInputValue: zoomStartTime,
+        selectedDate: startTime,
+        currentDate: now,
+        selectedLocal: startTime.toLocaleString('ar-EG'),
+        currentLocal: now.toLocaleString('ar-EG'),
+        selectedUTC: startTime.toISOString(),
+        currentUTC: now.toISOString(),
+        timeDifference: startTime.getTime() - now.getTime(),
+        minutesDifference: (startTime.getTime() - now.getTime()) / (1000 * 60),
+        browserTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      });
+      
+      // ✅ التحقق من أن الوقت في المستقبل (مع buffer صغير)
+      const bufferTime = 2 * 60 * 1000; // 2 دقائق buffer
+      
+      if (startTime.getTime() <= (now.getTime() + bufferTime)) {
+        const diffMinutes = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60));
+        
+        if (diffMinutes > 0) {
+          alert(`❌ وقت البدء في الماضي! الفرق: ${Math.abs(diffMinutes)} دقيقة\n\n` +
+                `الوقت المختار: ${startTime.toLocaleString('ar-EG')}\n` +
+                `الوقت الحالي: ${now.toLocaleString('ar-EG')}\n\n` +
+                `💡 اختر وقتاً في المستقبل (بعد ${now.toLocaleString('ar-EG')})`);
+        } else {
+          alert(`⚠️ وقت البدء قريب جداً من الآن!\n\n` +
+                `الوقت المختار: ${startTime.toLocaleString('ar-EG')}\n` +
+                `الوقت الحالي: ${now.toLocaleString('ar-EG')}\n\n` +
+                `هل تريد المتابعة؟`);
+        }
+        
+        zoomStartTimeInput.style.borderColor = 'red';
+        zoomStartTimeInput.focus();
+        return;
+      }
+      
+      // ✅ إعادة تعيين اللون
+      zoomStartTimeInput.style.borderColor = '';
+      zoomDurationInput.style.borderColor = '';
+      
+      // 🔵 إضافة القيم يدوياً إلى FormData
+      console.log('🟢 Adding Zoom data to FormData manually');
+      fd.set('zoom_start_time', zoomStartTime);
+      fd.set('zoom_duration', zoomDuration);
+      
+      // ✅ التحقق النهائي من FormData
+      console.log('✅ Final FormData Zoom values:', {
+        startTime: fd.get('zoom_start_time'),
+        duration: fd.get('zoom_duration')
+      });
+    }
+    
+    // 🟢 إرسال البيانات إلى الخادم
+    try {
+      console.log('🚀 Sending request to server...');
+      
+      const res = await fetch(`/lectures/instructor/module/${window.moduleId}/lecture/add/`, {
+        method: 'POST',
+        body: fd,
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+      });
+      
+      const data = await res.json();
+      console.log('📨 Server response:', data);
+      
+      if (data.success) {
+        // نجاح - إضافة المحاضرة للقائمة
+        addLectureToList(data.lecture_title, data.lecture_id);
+        lectureForm.reset();
+        
+        // تفعيل الخطوة التالية
+        toStep3Btn.disabled = false;
+        
+        // إظهار رسالة نجاح
+        const msgDiv = document.createElement('div');
+        msgDiv.innerHTML = alertBox('success', '✅ Lecture saved successfully!');
+        lectureForm.parentNode.insertBefore(msgDiv, lectureForm.nextSibling);
+        
+        // إخفاء الرسالة بعد 3 ثواني
+        setTimeout(() => {
+          msgDiv.remove();
+        }, 3000);
+        
+      } else {
+        alert('❌ Error: ' + parseErrors(data.errors));
+      }
+    } catch (error) {
+      console.error('Error saving lecture:', error);
+      alert('❌ Network error occurred');
     }
   });
 
@@ -453,40 +806,39 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-questionForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!currentQuizId) {
-    alert('Please create a quiz first!');
-    return;
-  }
+  questionForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentQuizId) {
+      alert('Please create a quiz first!');
+      return;
+    }
 
-  const fd = new FormData(questionForm);
+    const fd = new FormData(questionForm);
 
-  const res = await fetch(`/lectures/instructor/quiz/${currentQuizId}/question/add/`, {
-    method: 'POST',
-    body: fd
+    const res = await fetch(`/lectures/instructor/quiz/${currentQuizId}/question/add/`, {
+      method: 'POST',
+      body: fd
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      const li = document.createElement('li');
+      li.className = 'list-group-item';
+      li.textContent = fd.get('text');
+      questionList.appendChild(li);
+      questionForm.reset();
+      correctChoiceInput.value = '';
+      choicesContainer.innerHTML = `
+        <label class="form-label">Choices</label>
+        <div class="input-group mb-1">
+          <input type="text" class="form-control" name="choices[]" placeholder="Choice 1">
+          <button type="button" class="btn btn-outline-success mark-correct">✓</button>
+        </div>`;
+    } else {
+      alert('Error: ' + parseErrors(data.errors));
+    }
   });
-
-  const data = await res.json();
-
-  if (data.success) {
-    const li = document.createElement('li');
-    li.className = 'list-group-item';
-    li.textContent = fd.get('text');
-    questionList.appendChild(li);
-    questionForm.reset();
-    correctChoiceInput.value = '';
-    choicesContainer.innerHTML = `
-      <label class="form-label">Choices</label>
-      <div class="input-group mb-1">
-        <input type="text" class="form-control" name="choices[]" placeholder="Choice 1">
-        <button type="button" class="btn btn-outline-success mark-correct">✓</button>
-      </div>`;
-  } else {
-    alertBox('danger', parseErrors(data.errors));
-  }
-});
-
 
   // ==== CASE STUDY CREATION ====
   document.getElementById('caseForm').addEventListener('submit', async (e) => {
@@ -502,7 +854,6 @@ questionForm.addEventListener('submit', async (e) => {
       caseMsg.innerHTML = alertBox('success', 'Case Study saved successfully!');
       e.target.reset();
     } else {
-      caseMsg
       caseMsg.innerHTML = alertBox('danger', parseErrors(data.errors));
     }
   });

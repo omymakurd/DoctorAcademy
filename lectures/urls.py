@@ -12,6 +12,8 @@ urlpatterns = [
     path('instructor/lecture/<int:lecture_id>/quiz/add/', views.add_quiz, name='add_quiz'),
     path('instructor/lecture/<int:lecture_id>/case/add/', views.add_case_study, name='add_case_study'),
     path('instructor/quiz/<int:quiz_id>/question/add/', views.add_question, name='add_question'),
+    
+
 
 
 ]

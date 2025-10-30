@@ -58,9 +58,17 @@ INSTALLED_APPS = [
     'lectures',
     'analytics',
     'notification',
-     'widget_tweaks',
+    'widget_tweaks',
+    'zoom_integration',
+    'crispy_forms',
+    'crispy_bootstrap5',
 ]
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 AUTH_USER_MODEL = "users.User"
+
+# السماح برفع ملفات أكبر
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 ميجابايت (يمكن زيادتها حسب الحاجة)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 ميجابايت
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -146,6 +154,17 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
+ZOOM_ACCOUNT_ID = "w9pi8TP4Sq2VUH_Cqz06Mg"
+ZOOM_CLIENT_ID = "2ayr3KLnQeGC40xyAxU8ug"
+ZOOM_CLIENT_SECRET = "xIiguOlrNfCPwRewEzfEcu00DvHKunN9"
+
+ZOOM_MEETING_SETTINGS = {
+    "waiting_room": True,
+    "join_before_host": False,
+    "mute_upon_entry": True,
+    "auto_recording": "cloud",
+    "private_meeting": True,
+}
 
 
 USE_TZ = True

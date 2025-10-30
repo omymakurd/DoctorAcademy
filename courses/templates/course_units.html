@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-3">{{ course.title }}</h1>
+
+    <!-- زر إضافة وحدة جديدة -->
+    <a href="{% url 'courses:unit-add' course.id %}" class="btn btn-primary mb-3">
+        + Add New Unit
+    </a>
+
+    {% if units %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Unit Title</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for unit in units %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ unit.title }}</td>
+                        <td>
+                            <a href="{% url 'courses:unit-edit' unit.id %}" class="btn btn-sm btn-warning">Edit</a>
+                            <a href="{% url 'courses:unit-delete' unit.id %}" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No units yet.</p>
+    {% endif %}
+
+    <a href="{% url 'courses:course_provider_dashboard' %}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+</div>
+{% endblock %}

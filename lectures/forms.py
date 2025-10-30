@@ -1,3 +1,4 @@
+# lectures/forms.py
 from django import forms
 from .models import (
     Module,
@@ -25,7 +26,7 @@ class ModuleForm(forms.ModelForm):
 
     class Meta:
         model = Module
-        fields = ['basic_system', 'clinical_system', 'thumbnail', 'description', 'price']
+        fields = ['basic_system', 'clinical_system', 'thumbnail', 'description', 'price', 'is_featured']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
         }
@@ -35,6 +36,7 @@ class ModuleForm(forms.ModelForm):
         basic = cleaned_data.get('basic_system')
         clinical = cleaned_data.get('clinical_system')
 
+        # التحقق من اختيار نظام واحد فقط
         if not basic and not clinical:
             raise forms.ValidationError("You must select either a Basic System or a Clinical System.")
         if basic and clinical:
@@ -42,6 +44,18 @@ class ModuleForm(forms.ModelForm):
 
         return cleaned_data
 
+
+# =======================
+# الحقول الخاصة بـ Zoom
+# =======================
+_ZOOM_FIELDS = [
+    'zoom_link',
+    'zoom_meeting_id',
+    'zoom_start_time',
+    'zoom_duration',
+    'zoom_join_url',
+    'zoom_start_url',
+]
 
 
 # =======================
@@ -56,20 +70,33 @@ class BasicLectureForm(forms.ModelForm):
 
     class Meta:
         model = BasicLecture
-        fields = ['module', 'discipline', 'title', 'lecture_type', 'video_file', 'zoom_link', 'description']
+        fields = [
+            'module',
+            'discipline',
+            'title',
+            'lecture_type',
+            'video_file',
+            'description',
+            * _ZOOM_FIELDS,  # نضيف حقول الزووم هنا لتكون في الفورم ولكن مخفية
+        ]
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'zoom_start_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        # إفراغ الـ discipline بالبداية
+        # فلترة الموديولات للمحاضر الحالي فقط
+        if user and getattr(user, 'is_authenticated', False):
+            self.fields['module'].queryset = Module.objects.filter(
+                basic_system__isnull=False, instructor=user
+            )
+
+        # إعداد discipline ليكون فارغ مبدئيًا ويتحدث حسب الموديول
         self.fields['discipline'].queryset = Discipline.objects.none()
 
-        # فلترة الموديولات حسب المستخدم
-        if user and user.is_authenticated:
-            self.fields['module'].queryset = Module.objects.filter(basic_system__isnull=False, instructor=user)
-
-        # تحديث الـ discipline عند اختيار الموديول
         if 'module' in self.data:
             try:
                 module_id = int(self.data.get('module'))
@@ -79,7 +106,15 @@ class BasicLectureForm(forms.ModelForm):
             except (ValueError, TypeError, Module.DoesNotExist):
                 pass
         elif self.instance.pk and self.instance.module:
-            self.fields['discipline'].queryset = Discipline.objects.filter(system=self.instance.module.basic_system)
+            # عند التعديل، نملأ الـ disciplines حسب الموديول الحالي
+            if self.instance.module.basic_system:
+                self.fields['discipline'].queryset = Discipline.objects.filter(
+                    system=self.instance.module.basic_system
+                )
+
+        # إخفاء حقول الزووم من الواجهة (تبقى موجودة للبرمجة فقط)
+        for f in _ZOOM_FIELDS:
+            self.fields[f].widget = forms.HiddenInput()
 
 
 # =======================
@@ -94,16 +129,29 @@ class ClinicalLectureForm(forms.ModelForm):
 
     class Meta:
         model = ClinicalLecture
-        fields = ['module', 'title', 'lecture_type', 'video_url', 'zoom_link', 'description']
+        fields = [
+            'module',
+            'title',
+            'lecture_type',
+            'video_url',
+            'description',
+            * _ZOOM_FIELDS,
+        ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
+            'zoom_start_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        if user and user.is_authenticated:
-            self.fields['module'].queryset = Module.objects.filter(clinical_system__isnull=False, instructor=user)
-        else:
-            self.fields['module'].queryset = Module.objects.filter(clinical_system__isnull=False)
+        # فلترة الموديولات الخاصة بالمستخدم
+        if user and getattr(user, 'is_authenticated', False):
+            self.fields['module'].queryset = Module.objects.filter(
+                clinical_system__isnull=False, instructor=user
+            )
+
+        # إخفاء حقول الزووم من الواجهة
+        for f in _ZOOM_FIELDS:
+            self.fields[f].widget = forms.HiddenInput()

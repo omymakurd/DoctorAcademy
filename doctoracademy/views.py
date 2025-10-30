@@ -1,27 +1,20 @@
 from django.shortcuts import render
+from courses.models import Course
+from lectures.models import Module, LectureCategory
 
 def home(request):
-    # لو بدك تمرر بيانات لاحقًا مثل الكورسات أو الخدمات
+    featured_courses = Course.objects.filter(featured=True, status='approved').order_by('-created_at')
+    
+    # جلب أي modules معتمدة/منشورة
+    all_modules = Module.objects.filter(status__in=['approved', 'published'])[:8]
+    
+    # تقسيمها يدوياً بناءً على وجود النظام
+    basic_modules = [m for m in all_modules if m.basic_system][:4]
+    clinical_modules = [m for m in all_modules if m.clinical_system][:4]
+
     context = {
-        "featured_courses": [
-            {
-                "title": "Anatomy Basics",
-                "description": "Understand the fundamentals of human anatomy.",
-                "image": "https://images.unsplash.com/photo-1588776814546-6a59b2e81533?auto=format&fit=crop&w=800&q=80",
-                "link": "#"
-            },
-            {
-                "title": "Clinical Case Studies",
-                "description": "Analyze real-life medical cases for better understanding.",
-                "image": "https://images.unsplash.com/photo-1588776814546-6a59b2e81533?auto=format&fit=crop&w=800&q=80",
-                "link": "#"
-            },
-            {
-                "title": "Pharmacology Essentials",
-                "description": "Learn about drugs, dosages, and therapeutic uses.",
-                "image": "https://images.unsplash.com/photo-1588776814546-6a59b2e81533?auto=format&fit=crop&w=800&q=80",
-                "link": "#"
-            }
-        ]
+        "featured_courses": featured_courses,
+        "basic_modules": basic_modules,
+        "clinical_modules": clinical_modules,
     }
     return render(request, "home.html", context)

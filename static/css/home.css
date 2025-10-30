@@ -8,7 +8,7 @@
   --navbar-height: 80px;
 }
 
-/* Body */
+/* ===== Body ===== */
 body {
   background-color: var(--bg-color);
   color: var(--text-color);
@@ -17,11 +17,7 @@ body {
   padding: 0;
 }
 
-/* Navbar */
-/* ============================= */
-/* Navbar Scroll Effect - Fixed   */
-/* ============================= */
-
+/* ===== Navbar ===== */
 .navbar-scroll {
   position: fixed;
   top: 0;
@@ -38,76 +34,47 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* Brand */
-.navbar-scroll .navbar-brand {
-  font-weight: 700;
-  color: white;
-  transition: color 0.3s ease;
-}
-
-.navbar-scroll.scrolled .navbar-brand {
-  color: var(--primary-color);
-}
-
-/* Links */
-.navbar-scroll .nav-link {
-  color: white;
-  font-weight: 500;
-  transition: color 0.3s ease;
-}
-
-.navbar-scroll .nav-link.active {
-  color: var(--accent-color) !important;
-  font-weight: 600;
-}
-
-.navbar-scroll .nav-link:hover {
-  color: var(--accent-color);
-}
-
-/* Links عند Scroll */
-.navbar-scroll.scrolled .nav-link {
-  color: var(--text-color);
-}
-
-.navbar-scroll.scrolled .nav-link.active {
-  color: var(--accent-color);
-}
-
-.navbar-scroll.scrolled .nav-link:hover {
-  color: var(--accent-color);
-}
-
-/* Buttons */
-.navbar-scroll .btn {
-  font-weight: 600;
-  border-radius: 8px;
+.navbar-scroll .navbar-brand,
+.navbar-scroll .nav-link,
+.navbar-scroll .nav-username,
+.navbar-scroll .nav-logout-btn {
   transition: all 0.3s ease;
 }
 
-.navbar-scroll .btn:hover {
+.navbar-scroll .navbar-brand { font-weight: 700; color: white; }
+.navbar-scroll.scrolled .navbar-brand { color: var(--primary-color); }
+
+.navbar-scroll .nav-link { color: white; font-weight: 500; }
+.navbar-scroll .nav-link.active { color: var(--accent-color); font-weight: 600; }
+.navbar-scroll .nav-link:hover { color: var(--accent-color); }
+.navbar-scroll.scrolled .nav-link { color: var(--text-color); }
+.navbar-scroll.scrolled .nav-link.active { color: var(--accent-color); }
+
+.navbar-scroll .nav-username { color: white; cursor: default; }
+.navbar-scroll.scrolled .nav-username { color: var(--text-color); }
+.navbar-scroll .nav-username:hover { color: var(--accent-color); }
+
+.navbar-scroll .nav-logout-btn {
+  color: white;
+  border: 2px solid white;
+  border-radius: 8px;
+}
+.navbar-scroll .nav-logout-btn:hover {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.navbar-scroll.scrolled .nav-logout-btn {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+.navbar-scroll.scrolled .nav-logout-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .navbar-scroll {
-    background-color: rgba(245,245,245,0.95) !important;
-  }
-  .navbar-scroll .navbar-brand,
-  .navbar-scroll .nav-link,
-  .navbar-scroll .btn {
-    color: var(--text-color) !important;
-  }
-  .navbar-scroll .nav-link.active {
-    color: var(--accent-color) !important;
-  }
-}
-
-
-
-/* Hero */
+/* ===== Hero Section ===== */
 .hero-section {
   position: relative;
   height: 90vh;
@@ -168,8 +135,9 @@ body {
   padding: 12px 30px;
   background-color: var(--accent-color);
   color: var(--text-color);
+  border-radius: 8px;
+  transition: all 0.3s ease;
 }
-
 .hero-content .btn:hover {
   background-color: var(--secondary-color);
   color: white;
@@ -177,53 +145,86 @@ body {
   box-shadow: 0 6px 12px rgba(0,0,0,0.3);
 }
 
-/* Cards */
+/* ===== Card Container ===== */
+.card-container {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* ===== Common Card Style ===== */
 .card {
-  transition: all 0.3s ease;
-  border-radius: 12px;
+  border-radius: 15px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
 }
 
-.card-title {
-  color: var(--primary-color);
-  font-weight: 600;
+.card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-/* Footer */
-footer {
-  background-color: #212529;
+.card:hover img { transform: scale(1.05); }
+
+.card-body {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-title { color: var(--primary-color); font-weight: 600; font-size: 1.1rem; }
+.card-price { font-weight: 600; font-size: 1.1rem; color: var(--accent-color); margin-bottom: 10px; }
+
+.card .btn {
+  width: 100%;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.card .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  background-color: var(--secondary-color);
   color: white;
+}
+
+/* ===== Footer ===== */
+footer, .footer-modern {
   font-size: 0.95rem;
-  padding: 20px 0;
   text-align: center;
 }
 
-footer a {
-  text-decoration: none;
-}
+footer { background-color: #212529; color: white; padding: 20px 0; }
+footer a { text-decoration: none; }
+footer a:hover { color: var(--accent-color); }
+footer h5, footer h6 { color: var(--accent-color); }
+footer p { color: #ccc; font-size: 0.95rem; }
+footer hr { border-color: rgba(255,255,255,0.2); }
 
-footer a:hover {
-  color: var(--accent-color);
+/* Footer Modern */
+.footer-modern {
+  background: linear-gradient(180deg, #0b132b 0%, #1c2541 100%);
+  color: #f5f5f5;
 }
-
-footer h5, footer h6 {
-  color: var(--accent-color);
+.footer-modern a { color: #b0bec5; transition: color 0.3s ease; }
+.footer-modern a:hover { color: #81d4fa; }
+.footer-modern .social-links a {
+  color: #81d4fa;
+  font-size: 1.3rem;
+  transition: all 0.3s ease;
 }
+.footer-modern .social-links a:hover { color: #fff; transform: translateY(-2px); }
 
-footer p {
-  font-size: 0.95rem;
-  color: #ccc;
-}
-
-footer hr {
-  border-color: rgba(255,255,255,0.2);
-}
-
-/* Responsive */
+/* ===== Responsive ===== */
 @media (max-width: 992px) {
   .hero-content h1 { font-size: 2.5rem; }
   .hero-content p { font-size: 1.1rem; }
@@ -233,4 +234,5 @@ footer hr {
   .hero-content h1 { font-size: 2rem; }
   .hero-content p { font-size: 1rem; }
   .hero-content { padding: 20px 25px; }
+  .card img { height: 150px; }
 }

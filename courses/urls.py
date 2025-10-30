@@ -1,7 +1,16 @@
 from django.urls import path
 from . import views
 
+app_name = "courses"   # ✅ أضف هذه
+
 urlpatterns = [
-   # path('', views.course_list, name='course_list'),
-    #path('<int:pk>/', views.course_detail, name='course_detail'),
+    path('dashboard/', views.course_provider_dashboard, name='course_provider_dashboard'),
+    path('provider/course/create/', views.course_create, name='course-create'),
+    path('provider/course/<int:pk>/edit/', views.course_edit, name='course-edit'),
+    path('provider/course/<int:pk>/delete/', views.course_delete, name='course-delete'),
+
+    path('provider/course/<int:course_id>/units/', views.course_units, name='course-units'),
+    path('provider/course/<int:course_id>/units/add/', views.create_unit, name='unit-add'),
+    path('provider/unit/<int:unit_id>/edit/', views.edit_unit, name='unit-edit'),
+    path('provider/unit/<int:unit_id>/delete/', views.delete_unit, name='unit-delete'),
 ]

@@ -11,7 +11,6 @@
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-
   <!-- Custom CSS -->
   <link rel="stylesheet" href="{% static 'css/home.css' %}">
 
@@ -34,13 +33,12 @@
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
-
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">{% trans "Home" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">{% trans "Courses" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">{% trans "Lectures" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">{% trans "Store" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="#courses">{% trans "Courses" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="#lectures">{% trans "Lectures" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="#store">{% trans "Store" %}</a></li>
 
         <!-- Language Switcher -->
         <li class="nav-item dropdown ms-3">
@@ -60,12 +58,25 @@
         </li>
 
         {% if user.is_authenticated %}
-          <li class="nav-item ms-3">
-            <span class="text-white fw-semibold">👋 {{ user.username }}</span>
-          </li>
-          <li class="nav-item ms-2">
-            <a class="btn btn-outline-light fw-bold" href="{% url 'logout' %}">{% trans "Logout" %}</a>
-          </li>
+        <li class="nav-item dropdown ms-3">
+          <a class="nav-link dropdown-toggle fw-semibold" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+            👋 {{ user.username }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
+            {% if user.role == 'admin' %}
+              <li><a class="dropdown-item" href="/admin/">Admin Dashboard</a></li>
+            {% elif user.role == 'instructor' %}
+              <li><a class="dropdown-item" href="{% url 'instructor_dashboard' %}">Instructor Dashboard</a></li>
+            {% elif user.role == 'student' %}
+              <li><a class="dropdown-item" href="#">Student Dashboard</a></li>
+            {% elif user.role == 'course_provider' %}
+              <li><a class="dropdown-item" href="{% url 'courses:course_provider_dashboard' %}">Provider Dashboard</a></li>
+            {% endif %}
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#">{% trans "My Profile" %}</a></li>
+            <li><a class="dropdown-item text-danger fw-semibold" href="{% url 'logout' %}">{% trans "Logout" %}</a></li>
+          </ul>
+        </li>
         {% else %}
           <li class="nav-item ms-2">
             <a class="btn btn-warning text-dark fw-bold" href="{% url 'auth' %}">{% trans "Join Us" %}</a>
@@ -76,114 +87,317 @@
   </div>
 </nav>
 
-
 <!-- Hero Section -->
 <section class="hero-section d-flex align-items-center justify-content-center position-relative">
   <video autoplay muted loop playsinline class="hero-video">
     <source src="{% static 'videos/hero-video.mp4' %}" type="video/mp4">
   </video>
   <div class="hero-overlay position-absolute top-0 start-0 w-100 h-100"></div>
-  
   <div class="hero-content text-center text-white position-relative animate__animated animate__fadeIn">
     <h1>{% trans "Upgrade your medical skills today" %}</h1>
     <p>{% trans "All courses and lectures are fully paid and certified." %}</p>
-    <a href="#" class="btn btn-warning btn-lg">{% trans "Explore Courses" %}</a>
+    <a href="#courses" class="btn btn-warning btn-lg">{% trans "Explore Courses" %}</a>
   </div>
 </section>
 
 <!-- Featured Courses -->
-<section class="py-5">
-  <div class="container">
+<section id="courses" class="py-5 bg-light">
+  <div class="container py-5">
     <h2 class="fw-bold mb-4 text-primary">{% trans "Featured Courses" %}</h2>
     <div class="row g-4">
-      {% comment %} Example Courses {% endcomment %}
+  {% for course in featured_courses %}
+    <div class="col-sm-6 col-md-4 col-lg-3">
+      <div class="card course-card h-100">
+        {% if course.thumbnail %}
+          <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}">
+        {% else %}
+          <img src="{% static 'images/default-course.jpg' %}" class="card-img-top" alt="{{ course.title }}">
+        {% endif %}
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title">{{ course.title }}</h5>
+          <p class="card-price"><i class="bi bi-currency-dollar"></i> {{ course.price }}</p>
+          <div class="mt-auto d-flex gap-2">
+            <a href="#" class="btn btn-outline-primary w-50">View</a>
+            <a href="#" class="btn btn-warning w-50">Buy</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-muted">{% trans "No featured courses available at the moment." %}</p>
+  {% endfor %}
+</div>
+
+  </div>
+</section>
+
+<!-- Trending Lectures -->
+<!-- ================= Trending Lectures ================= -->
+<!-- Trending Lectures -->
+<section class="trending-lectures py-5">
+  <div class="container">
+    <h2 class="mb-4 text-primary">{% trans "Trending Lectures" %}</h2>
+
+    <!-- ===== Basic Sciences ===== -->
+    <h4 class="mb-3 text-secondary">{% trans "Basic Sciences" %}</h4>
+    <div class="row mb-5">
+      {% for module in basic_modules %}
+      <div class="col-md-3 mb-4">
+        <div class="card h-100 shadow-sm">
+          {% if module.thumbnail %}
+            <img class="card-img-top" src="{{ module.thumbnail.url }}" alt="{{ module.title }}" style="height: 180px; object-fit: cover;">
+          {% else %}
+            <img class="card-img-top" src="{% static 'images/default-module.png' %}" alt="{{ module.title }}" style="height: 180px; object-fit: cover;">
+          {% endif %}
+          <div class="card-body d-flex flex-column">
+            <h6 class="card-title">{{ module.title }}</h6>
+            <p class="card-text text-muted small flex-grow-1">
+              {% if module.basic_system %}
+                <strong>System:</strong> {{ module.basic_system.name }}<br>
+              {% endif %}
+              {% if module.description %}
+                {{ module.description|truncatewords:12 }}
+              {% endif %}
+            </p>
+            <div class="mt-auto">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-warning fw-bold">${{ module.price }}</span>
+                <small class="text-muted">
+                  {% trans "Lectures:" %} {{ module.basic_lectures.count }}
+                </small>
+              </div>
+              <div class="d-grid gap-2">
+                <a href="#" class="btn btn-outline-primary btn-sm">{% trans "View Details" %}</a>
+                <a href="#" class="btn btn-warning btn-sm">{% trans "Enroll Now" %}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="text-center py-4">
+          <i class="bi bi-book fs-1 text-muted"></i>
+          <p class="text-muted mt-2">{% trans "No basic science modules available at the moment." %}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- ===== Clinical Sciences ===== -->
+    <h4 class="mb-3 text-secondary">{% trans "Clinical Sciences" %}</h4>
+    <div class="row">
+      {% for module in clinical_modules %}
+      <div class="col-md-3 mb-4">
+        <div class="card h-100 shadow-sm">
+          {% if module.thumbnail %}
+            <img class="card-img-top" src="{{ module.thumbnail.url }}" alt="{{ module.title }}" style="height: 180px; object-fit: cover;">
+          {% else %}
+            <img class="card-img-top" src="{% static 'images/default-module.png' %}" alt="{{ module.title }}" style="height: 180px; object-fit: cover;">
+          {% endif %}
+          <div class="card-body d-flex flex-column">
+            <h6 class="card-title">{{ module.title }}</h6>
+            <p class="card-text text-muted small flex-grow-1">
+              {% if module.clinical_system %}
+                <strong>System:</strong> {{ module.clinical_system.name }}<br>
+              {% endif %}
+              {% if module.description %}
+                {{ module.description|truncatewords:12 }}
+              {% endif %}
+            </p>
+            <div class="mt-auto">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-warning fw-bold">${{ module.price }}</span>
+                <small class="text-muted">
+                  {% trans "Lectures:" %} {{ module.clinical_lectures.count }}
+                </small>
+              </div>
+              <div class="d-grid gap-2">
+                <a href="#" class="btn btn-outline-primary btn-sm">{% trans "View Details" %}</a>
+                <a href="#" class="btn btn-warning btn-sm">{% trans "Enroll Now" %}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="text-center py-4">
+          <i class="bi bi-heart-pulse fs-1 text-muted"></i>
+          <p class="text-muted mt-2">{% trans "No clinical science modules available at the moment." %}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+<!-- Store Highlights -->
+<section id="store" class="py-5 bg-light">
+<div class="container py-5 bg-light">
+  <h2 class="fw-bold mb-4 text-primary">{% trans "Store Highlights" %}</h2>
+  <div class="card-container">
+    <div class="card">
+      <img src="{% static 'images/store1.jpg' %}" class="card-img-top" alt="Item 1">
+      <div class="card-body">
+        <h6 class="card-title">{% trans "Medical Textbook" %}</h6>
+        <p class="card-price">50</p>
+        <a href="#" class="btn btn-warning">{% trans "Add to Cart" %}</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="{% static 'images/store2.jpg' %}" class="card-img-top" alt="Item 2">
+      <div class="card-body">
+        <h6 class="card-title">{% trans "Surgical Kit" %}</h6>
+        <p class="card-price">120</p>
+        <a href="#" class="btn btn-warning">{% trans "Add to Cart" %}</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="{% static 'images/store3.jpg' %}" class="card-img-top" alt="Item 3">
+      <div class="card-body">
+        <h6 class="card-title">{% trans "Medical Instruments" %}</h6>
+        <p class="card-price">200</p>
+        <a href="#" class="btn btn-warning">{% trans "Add to Cart" %}</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="{% static 'images/store4.jpg' %}" class="card-img-top" alt="Item 4">
+      <div class="card-body">
+        <h6 class="card-title">{% trans "Anatomy Models" %}</h6>
+        <p class="card-price">80</p>
+        <a href="#" class="btn btn-warning">{% trans "Add to Cart" %}</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</section>
+
+<!-- Upcoming Webinars -->
+<section class="py-5">
+  <div class="container">
+    <h2 class="fw-bold mb-4 text-primary">{% trans "Upcoming Webinars" %}</h2>
+    <div class="row g-4">
       <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-          <img src="{% static 'images/course1.jpg' %}" class="card-img-top" alt="Course 1">
+        <div class="card h-100 shadow-sm">
+          <img src="{% static 'images/webinar1.jpg' %}" class="card-img-top" alt="Webinar 1">
           <div class="card-body">
-            <h5 class="card-title">{% trans "Advanced Anatomy" %}</h5>
-            <p class="card-text text-muted">$120</p>
-            <a href="#" class="btn btn-warning w-100">{% trans "Buy Now" %}</a>
+            <h6 class="card-title">{% trans "Cardiology Trends 2025" %}</h6>
+            <p class="text-muted small">{% trans "Date: Nov 15, 2025" %}</p>
+            <a href="#" class="btn btn-outline-primary w-100">{% trans "Register" %}</a>
           </div>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-          <img src="{% static 'images/course2.jpg' %}" class="card-img-top" alt="Course 2">
+        <div class="card h-100 shadow-sm">
+          <img src="{% static 'images/webinar2.jpg' %}" class="card-img-top" alt="Webinar 2">
           <div class="card-body">
-            <h5 class="card-title">{% trans "Surgical Techniques" %}</h5>
-            <p class="card-text text-muted">$150</p>
-            <a href="#" class="btn btn-warning w-100">{% trans "Buy Now" %}</a>
+            <h6 class="card-title">{% trans "Surgical Innovations" %}</h6>
+            <p class="text-muted small">{% trans "Date: Dec 2, 2025" %}</p>
+            <a href="#" class="btn btn-outline-primary w-100">{% trans "Register" %}</a>
           </div>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-          <img src="{% static 'images/course3.jpg' %}" class="card-img-top" alt="Course 3">
+        <div class="card h-100 shadow-sm">
+          <img src="{% static 'images/webinar3.jpg' %}" class="card-img-top" alt="Webinar 3">
           <div class="card-body">
-            <h5 class="card-title">{% trans "Medical Imaging" %}</h5>
-            <p class="card-text text-muted">$100</p>
-            <a href="#" class="btn btn-warning w-100">{% trans "Buy Now" %}</a>
+            <h6 class="card-title">{% trans "Medical Imaging Updates" %}</h6>
+            <p class="text-muted small">{% trans "Date: Dec 20, 2025" %}</p>
+            <a href="#" class="btn btn-outline-primary w-100">{% trans "Register" %}</a>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Platform Features -->
+<section class="py-5 bg-light">
+  <div class="container text-center">
+    <h2 class="fw-bold mb-4 text-primary">{% trans "Why Choose Doctor Academy?" %}</h2>
+    <div class="row g-4">
+      <div class="col-md-3">
+        <i class="bi bi-award fs-1 text-warning mb-3"></i>
+        <h5>{% trans "Certified Courses" %}</h5>
+        <p class="text-muted small">{% trans "All courses are certified and recognized by top medical institutions." %}</p>
+      </div>
+      <div class="col-md-3">
+        <i class="bi bi-laptop fs-1 text-warning mb-3"></i>
+        <h5>{% trans "Interactive Lectures" %}</h5>
+        <p class="text-muted small">{% trans "Engage with experts through live and recorded interactive sessions." %}</p>
+      </div>
+      <div class="col-md-3">
+        <i class="bi bi-people fs-1 text-warning mb-3"></i>
+        <h5>{% trans "Global Community" %}</h5>
+        <p class="text-muted small">{% trans "Connect with learners and professionals worldwide." %}</p>
+      </div>
+      <div class="col-md-3">
+        <i class="bi bi-clock-history fs-1 text-warning mb-3"></i>
+        <h5>{% trans "Flexible Learning" %}</h5>
+        <p class="text-muted small">{% trans "Learn at your own pace anytime, anywhere." %}</p>
       </div>
     </div>
   </div>
 </section>
 
 <!-- Footer -->
-<footer class="bg-dark text-white pt-5 pb-4">
+<footer class="footer-modern text-light py-5">
   <div class="container">
-    <div class="row">
+    <div class="row gy-4">
       <!-- About -->
-      <div class="col-md-4 mb-4">
-        <h5 class="text-warning fw-bold mb-3">{% trans "Doctor Academy" %}</h5>
-        <p>{% trans "Upgrade your medical skills with certified courses and lectures online." %}</p>
+      <div class="col-lg-4 col-md-6">
+        <h5 class="fw-bold mb-3 text-gradient">Doctor Academy</h5>
+        <p class="mb-4 text-muted small">{% trans "Upgrade your medical skills with certified online courses and interactive lectures from top professionals." %}</p>
+        <div class="social-links mt-3">
+          <a href="#" class="me-3"><i class="bi bi-facebook"></i></a>
+          <a href="#" class="me-3"><i class="bi bi-instagram"></i></a>
+          <a href="#" class="me-3"><i class="bi bi-linkedin"></i></a>
+          <a href="#"><i class="bi bi-youtube"></i></a>
+        </div>
       </div>
-
       <!-- Quick Links -->
-      <div class="col-md-2 mb-4">
-        <h6 class="text-uppercase fw-bold mb-3">{% trans "Quick Links" %}</h6>
+      <div class="col-lg-2 col-md-3 col-6">
+        <h6 class="fw-semibold mb-3">{% trans "Explore" %}</h6>
         <ul class="list-unstyled">
-          <li><a href="#" class="text-white text-decoration-none">{% trans "Home" %}</a></li>
-          <li><a href="#" class="text-white text-decoration-none">{% trans "Courses" %}</a></li>
-          <li><a href="#" class="text-white text-decoration-none">{% trans "Lectures" %}</a></li>
-          <li><a href="#" class="text-white text-decoration-none">{% trans "Store" %}</a></li>
+          <li><a href="#">{% trans "Home" %}</a></li>
+          <li><a href="#courses">{% trans "Courses" %}</a></li>
+          <li><a href="#lectures">{% trans "Lectures" %}</a></li>
+          <li><a href="#store">{% trans "Store" %}</a></li>
         </ul>
       </div>
-
       <!-- Support -->
-      <div class="col-md-2 mb-4">
-        <h6 class="text-uppercase fw-bold mb-3">{% trans "Support" %}</h6>
+      <div class="col-lg-2 col-md-3 col-6">
+        <h6 class="fw-semibold mb-3">{% trans "Support" %}</h6>
         <ul class="list-unstyled">
-          <li><a href="#" class="text-white text-decoration-none">{% trans "FAQ" %}</a></li>
-          <li><a href="#" class="text-white text-decoration-none">{% trans "Help Center" %}</a></li>
-          <li><a href="#" class="text-white text-decoration-none">{% trans "Contact Us" %}</a></li>
+          <li><a href="#">{% trans "FAQ" %}</a></li>
+          <li><a href="#">{% trans "Help Center" %}</a></li>
+          <li><a href="#">{% trans "Contact" %}</a></li>
         </ul>
       </div>
-
-      <!-- Social -->
-      <div class="col-md-4 mb-4 text-md-end">
-        <h6 class="text-uppercase fw-bold mb-3">{% trans "Follow Us" %}</h6>
-        <a href="#" class="text-warning me-3 fs-5"><i class="bi bi-facebook"></i></a>
-        <a href="#" class="text-warning me-3 fs-5"><i class="bi bi-twitter"></i></a>
-        <a href="#" class="text-warning me-3 fs-5"><i class="bi bi-instagram"></i></a>
-        <a href="#" class="text-warning fs-5"><i class="bi bi-linkedin"></i></a>
+      <!-- Newsletter -->
+      <div class="col-lg-4 col-md-12">
+        <h6 class="fw-semibold mb-3">{% trans "Stay Updated" %}</h6>
+        <p class="text-muted small">{% trans "Get the latest courses, medical updates, and exclusive offers straight to your inbox." %}</p>
+        <form class="d-flex">
+          <input type="email" class="form-control me-2 rounded-pill" placeholder="{% trans 'Enter your email' %}">
+          <button class="btn btn-warning rounded-pill px-3" type="submit">{% trans "Subscribe" %}</button>
+        </form>
       </div>
     </div>
 
-    <hr class="border-secondary">
-
-    <div class="row">
-      <div class="col text-center text-muted">
-        &copy; 2025 Doctor Academy. {% trans "All rights reserved." %}
-      </div>
+    <hr class="my-4 text-secondary opacity-25">
+    <div class="text-center small text-muted">
+      © 2025 <span class="text-gradient fw-semibold">Doctor Academy</span>. {% trans "All rights reserved." %}
     </div>
   </div>
 </footer>
 
-<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'js/home.js' %}"></script>
 </body>
 </html>
+

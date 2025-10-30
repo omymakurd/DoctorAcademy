@@ -82,28 +82,46 @@ def add_module(request):
     return JsonResponse({'success': False, 'errors': 'Invalid request'})
 
 
+
+from zoom_integration.utils import create_zoom_meeting_for_lecture
+from django.utils import timezone
+
+
 @login_required
 def add_lecture(request, module_id):
-    if request.method == 'POST':
-        # تحقق أي نوع Module: Basic أو Clinical
-        module = Module.objects.get(id=module_id)
-        if module.basic_system:
-            form = BasicLectureForm(request.POST, request.FILES)
-        else:
-            form = ClinicalLectureForm(request.POST, request.FILES)
+    module = get_object_or_404(Module, id=module_id)
+    form_class = BasicLectureForm if module.basic_system else ClinicalLectureForm
 
+    if request.method == 'POST':
+        form = form_class(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             lecture = form.save(commit=False)
             lecture.module = module
             lecture.instructor = request.user
+            
+            # 🔵 معالجة محاضرات الزوم - النسخة الآمنة
+            if lecture.lecture_type == 'zoom':
+                try:
+                    from zoom_integration.services import SecureZoomManager
+                    zoom_manager = SecureZoomManager()
+                    
+                    meeting_data = zoom_manager.create_secure_meeting(lecture)
+                    
+                    # حفظ بيانات Zoom
+                    lecture.zoom_meeting_id = meeting_data['id']
+                    lecture.zoom_join_url = f"/zoom/join/{lecture.id}/"  # رابط آمن
+                    lecture.zoom_start_url = meeting_data['start_url']
+                    
+                except Exception as e:
+                    return JsonResponse({
+                        'success': False, 
+                        'errors': f'فشل إنشاء اجتماع Zoom: {str(e)}'
+                    })
+            
             lecture.save()
             return JsonResponse({'success': True, 'lecture_id': lecture.id})
+        
         return JsonResponse({'success': False, 'errors': form.errors})
-    return JsonResponse({'success': False, 'errors': 'Invalid request'})
-
-
-from .models import BasicLecture, ClinicalLecture, Quiz
-
 @login_required
 def add_quiz(request, lecture_id):
     lecture = BasicLecture.objects.filter(id=lecture_id).first() or ClinicalLecture.objects.filter(id=lecture_id).first()
@@ -240,7 +258,8 @@ def module_wizard(request):
     lecture_form = BasicLectureForm(user=request.user)
     return render(request, 'add_module_wizerd.html', {
         'module_form': module_form,
-        'lecture_form': lecture_form
+        'lecture_form': lecture_form,
+        
     })
 
 @login_required
@@ -265,3 +284,24 @@ def load_disciplines(request):
     system_id = request.GET.get('system_id')
     disciplines = Discipline.objects.filter(system_id=system_id).values('id', 'name')
     return JsonResponse(list(disciplines), safe=False)
+
+import requests
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
+@csrf_exempt
+def create_zoom_meeting_for_lecture(request, lecture_id):
+    from zoom_integration.views import create_zoom_meeting
+    res = create_zoom_meeting(request)
+    data = res.json()
+
+    if "join_url" in data:
+        lecture = BasicLecture.objects.get(id=lecture_id)
+        lecture.zoom_link = data["join_url"]
+        lecture.zoom_meeting_id = data["id"]
+        lecture.zoom_join_url = data["join_url"]
+        lecture.zoom_start_url = data["start_url"]
+        lecture.save()
+    return JsonResponse(data)

@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path
 from django.urls import path, include
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,8 +33,11 @@ urlpatterns = [
     path('notification/', include('notification.urls')),
     path('ai_chatbot/', include('ai_chatbot.urls')),
     path('users/', include('users.urls')),
+    path('zoom/', include('zoom_integration.urls')),
 
 ]
 urlpatterns += [
     path('i18n/', include('django.conf.urls.i18n')),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
