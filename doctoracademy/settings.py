@@ -62,10 +62,12 @@ INSTALLED_APPS = [
     'zoom_integration',
     'crispy_forms',
     'crispy_bootstrap5',
+    
 ]
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 AUTH_USER_MODEL = "users.User"
-
+HYPERPAY_API_KEY = "ZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmpiR0Z6Y3lJNklrMWxjbU5vWVc1MElpd2ljSEp2Wm1sc1pWOXdheUk2TVRFd01EVXlPQ3dpYm1GdFpTSTZJbWx1YVhScFlXd2lmUS5Wd3RvVmg3aUk2R1E5TUtwS0w3YkdxYlVkMVg4eG9tRjY2NFlHNUFjTG55R3hxQmNmMktjUzZSMVNoczJQcEJsZjJVTWFSd1l5UGhHaGlmdy15Wi1IZw=="
+HYPERPAY_HMAC = "BBA96CAD2B1BC95E1FB62AAB5C0238EB"
 # السماح برفع ملفات أكبر
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 ميجابايت (يمكن زيادتها حسب الحاجة)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 ميجابايت
@@ -82,6 +84,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'doctoracademy.urls'
+
 
 TEMPLATES = [
     {

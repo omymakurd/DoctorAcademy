@@ -1,6 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Course, CourseUnit, Quiz, Question, Choice, CourseProgress, Enrollment, CourseView, UnitView
+from .models import (
+    Course, CourseUnit, Quiz, Question, Choice, 
+    CourseProgress, Enrollment, CourseView, UnitView,
+    LearningPoint, CourseReview
+)
 
 # ========================
 # Inline Classes
@@ -8,6 +12,17 @@ from .models import Course, CourseUnit, Quiz, Question, Choice, CourseProgress, 
 class CourseUnitInline(admin.TabularInline):
     model = CourseUnit
     extra = 1
+
+class LearningPointInline(admin.TabularInline):
+    model = LearningPoint
+    extra = 1
+
+class CourseReviewInline(admin.TabularInline):
+    model = CourseReview
+    extra = 0
+    readonly_fields = ('user', 'rating', 'comment', 'created_at')
+    can_delete = False
+    show_change_link = True
 
 class QuizInline(admin.TabularInline):
     model = Quiz
@@ -29,7 +44,7 @@ class CourseAdmin(admin.ModelAdmin):
     list_display = ('title', 'provider', 'price', 'status', 'featured', 'thumbnail_preview', 'created_at')
     search_fields = ('title', 'description', 'provider__username')
     list_filter = ('status', 'featured', 'created_at')
-    inlines = [CourseUnitInline]
+    inlines = [CourseUnitInline, LearningPointInline, CourseReviewInline]
     actions = ['approve_courses', 'mark_as_featured', 'unmark_as_featured']
 
     def thumbnail_preview(self, obj):
@@ -106,7 +121,7 @@ class CourseProgressAdmin(admin.ModelAdmin):
 # ========================
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
-    list_display = ('student', 'course', 'enrolled_at')
+    list_display = ('student', 'course', 'enrolled_at', 'paid')
     search_fields = ('student__username', 'course__title')
 
 # ========================
@@ -124,3 +139,12 @@ class CourseViewAdmin(admin.ModelAdmin):
 class UnitViewAdmin(admin.ModelAdmin):
     list_display = ('student', 'unit', 'viewed_at')
     search_fields = ('student__username', 'unit__title')
+
+# ========================
+# CourseReview Admin
+# ========================
+@admin.register(CourseReview)
+class CourseReviewAdmin(admin.ModelAdmin):
+    list_display = ('course', 'user', 'rating', 'comment', 'created_at')
+    list_filter = ('rating', 'created_at')
+    search_fields = ('course__title', 'user__username', 'comment')

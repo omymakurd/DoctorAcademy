@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+{% if request.LANGUAGE_CODE == 'ar' %}
+<link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+<style> body { direction: rtl; text-align: right; } </style>
+{% else %}
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+{% endif %}
+
+<div class="container py-4">
+
+    <h2 class="mb-3">
+        {% if request.LANGUAGE_CODE == 'ar' %}
+            مرحباً، {{ request.user.username }} 👋
+        {% else %}
+            Welcome, {{ request.user.username }} 👋
+        {% endif %}
+    </h2>
+
+    <p class="text-muted">
+        {% if request.LANGUAGE_CODE == 'ar' %}
+            هذه لوحة تحكم الطالب الخاصة بك
+        {% else %}
+            This is your student dashboard.
+        {% endif %}
+    </p>
+
+    <hr>
+
+    <h4 class="mt-4">
+        {% if request.LANGUAGE_CODE == 'ar' %}
+            الكورسات التي أنت مشترك بها
+        {% else %}
+            Your Enrolled Courses
+        {% endif %}
+    </h4>
+
+    {% if enrollments %}
+        <div class="row mt-3">
+            {% for enroll in enrollments %}
+                <div class="col-md-4">
+                    <div class="card mb-3 shadow-sm" style="border-radius: 10px;">
+
+                        {% if enroll.course.image %}
+                        <img src="{{ enroll.course.image.url }}" class="w-100" style="height:160px;object-fit:cover;border-radius:10px 10px 0 0;">
+                        {% endif %}
+
+                        <div class="card-body">
+                            <h5 class="card-title">{{ enroll.course.title }}</h5>
+
+                            <p class="text-muted" style="font-size: 14px;">
+                                {{ enroll.course.description|truncatewords:20 }}
+                            </p>
+
+                            <a href="{% url 'learn_course' enroll.course.id %}" class="btn btn-primary w-100">
+                                {% if request.LANGUAGE_CODE == 'ar' %}
+                                    أكمل الكورس
+                                {% else %}
+                                    Continue Course
+                                {% endif %}
+                            </a>
+
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+    {% else %}
+        <div class="alert alert-info mt-3">
+            {% if request.LANGUAGE_CODE == 'ar' %}
+                لم تشترك بأي كورس بعد 🎓
+            {% else %}
+                You are not enrolled in any courses yet 🎓
+            {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

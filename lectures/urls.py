@@ -12,7 +12,11 @@ urlpatterns = [
     path('instructor/lecture/<int:lecture_id>/quiz/add/', views.add_quiz, name='add_quiz'),
     path('instructor/lecture/<int:lecture_id>/case/add/', views.add_case_study, name='add_case_study'),
     path('instructor/quiz/<int:quiz_id>/question/add/', views.add_question, name='add_question'),
-    
+    path("modules/", views.module_list, name="module_list"),
+
+    # صفحة تفاصيل موديول واحد
+    path("modules/<int:module_id>/", views.module_detail, name="module_detail"),
+
 
 
 

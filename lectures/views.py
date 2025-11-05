@@ -305,3 +305,69 @@ def create_zoom_meeting_for_lecture(request, lecture_id):
         lecture.zoom_start_url = data["start_url"]
         lecture.save()
     return JsonResponse(data)
+from django.shortcuts import render, get_object_or_404
+from .models import Module, BasicSystem, ClinicalSystem
+
+def module_list(request):
+    modules = Module.objects.filter(status__in=["approved", "published"])
+
+    # ----- Search -----
+    search = request.GET.get("search")
+    if search:
+        modules = modules.filter(title__icontains=search)
+
+    # ----- Price -----
+    price = request.GET.get("price")
+    if price == "free":
+        modules = modules.filter(price=0)
+    elif price == "paid":
+        modules = modules.filter(price__gt=0)
+
+    # ----- Basic / Clinical -----
+    system_type = request.GET.get("type")
+    if system_type == "basic":
+        modules = modules.filter(basic_system__isnull=False)
+    elif system_type == "clinical":
+        modules = modules.filter(clinical_system__isnull=False)
+
+    # ----- Filter by System -----
+    system_id = request.GET.get("system")
+    if system_id:
+        modules = modules.filter(basic_system_id=system_id) | modules.filter(clinical_system_id=system_id)
+
+    # ----- Featured -----
+    featured = request.GET.get("featured")
+    if featured == "true":
+        modules = modules.filter(is_featured=True)
+
+    # ----- Sorting -----
+    sort = request.GET.get("sort")
+    if sort == "latest":
+        modules = modules.order_by("-created_at")
+    elif sort == "oldest":
+        modules = modules.order_by("created_at")
+    elif sort == "price_low":
+        modules = modules.order_by("price")
+    elif sort == "price_high":
+        modules = modules.order_by("-price")
+
+    basic_systems = BasicSystem.objects.all()
+    clinical_systems = ClinicalSystem.objects.all()
+
+    return render(request, "module_list.html", {
+        "modules": modules,
+        "basic_systems": basic_systems,
+        "clinical_systems": clinical_systems,
+    })
+
+
+def module_detail(request, module_id):
+    module = get_object_or_404(Module, id=module_id)
+
+    units = list(module.basiclectures.all()) + list(module.clinicallectures.all())
+    units = sorted(units, key=lambda x: x.order)
+
+    return render(request, "module_detail.html", {
+        "module": module,
+        "units": units,
+    })

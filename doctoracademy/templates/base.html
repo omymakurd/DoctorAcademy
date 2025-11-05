@@ -41,9 +41,9 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">{% trans "Home" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">{% trans "Courses" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">{% trans "Lectures" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">{% trans "Store" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'courses:all_courses' %}">{% trans "Courses" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'module_list' %}">{% trans "Lectures" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="#store">{% trans "Store" %}</a></li>
 
         <!-- Language Switcher -->
         <li class="nav-item dropdown ms-3">
@@ -62,14 +62,35 @@
           </ul>
         </li>
 
-        <li class="nav-item ms-2">
-          <a class="btn btn-warning text-dark fw-bold" href="{% url 'auth' %}">{% trans "Join Us" %}</a>
+        {% if user.is_authenticated %}
+        <li class="nav-item dropdown ms-3">
+          <a class="nav-link dropdown-toggle fw-semibold" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+            👋 {{ user.username }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
+            {% if user.role == 'admin' %}
+              <li><a class="dropdown-item" href="/admin/">Admin Dashboard</a></li>
+            {% elif user.role == 'instructor' %}
+              <li><a class="dropdown-item" href="{% url 'instructor_dashboard' %}">Instructor Dashboard</a></li>
+            {% elif user.role == 'student' %}
+              <li><a class="dropdown-item" href="#">Student Dashboard</a></li>
+            {% elif user.role == 'course_provider' %}
+              <li><a class="dropdown-item" href="{% url 'courses:course_provider_dashboard' %}">Provider Dashboard</a></li>
+            {% endif %}
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#">{% trans "My Profile" %}</a></li>
+            <li><a class="dropdown-item text-danger fw-semibold" href="{% url 'logout' %}">{% trans "Logout" %}</a></li>
+          </ul>
         </li>
+        {% else %}
+          <li class="nav-item ms-2">
+            <a class="btn btn-warning text-dark fw-bold" href="{% url 'auth' %}">{% trans "Join Us" %}</a>
+          </li>
+        {% endif %}
       </ul>
     </div>
   </div>
 </nav>
-
 <!-- ========================= -->
 <!-- Main Content -->
 <!-- ========================= -->

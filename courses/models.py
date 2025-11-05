@@ -1,6 +1,6 @@
 from django.db import models
 from users.models import User
-
+from django.db.models import Avg
 # ========================
 # Course
 # ========================
@@ -16,13 +16,17 @@ class Course(models.Model):
     price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     thumbnail = models.ImageField(upload_to='course_thumbnails/', blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    featured = models.BooleanField(default=False)  # يحدد إذا يظهر على الصفحة الرئيسية
+    featured = models.BooleanField(default=False)  
+    duration = models.PositiveIntegerField(default=1, help_text="Duration in hours")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
-
+    def average_rating(self):
+        avg = self.reviews.aggregate(Avg('rating'))['rating__avg']
+        return round(avg, 1) if avg else None
 # ========================
 # Course Unit
 # ========================
@@ -62,11 +66,17 @@ class CourseUnit(models.Model):
 class Quiz(models.Model):
     unit = models.ForeignKey(CourseUnit, on_delete=models.CASCADE, related_name='quizzes')
     title = models.CharField(max_length=255)
+    max_attempts = models.IntegerField(default=2)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.unit.title} - {self.title}"
+class QuizAttempt(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    score = models.FloatField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class Question(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
@@ -77,6 +87,9 @@ class Question(models.Model):
 
     def __str__(self):
         return self.text[:50]
+
+    def get_correct_choice(self):
+        return self.choices.filter(is_correct=True).first()
 
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
@@ -118,13 +131,14 @@ class CourseProgress(models.Model):
 class Enrollment(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='enrollments')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
+    paid = models.BooleanField(default=False)   # ✅ أضف هذا
     enrolled_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('student', 'course')
 
     def __str__(self):
-        return f"{self.student.username} enrolled in {self.course.title}"
+        return f"{self.student.username} enrolled in {self.course.title} | Paid: {self.paid}"
 
 # ========================
 # Views Tracking
@@ -144,3 +158,27 @@ class UnitView(models.Model):
 
     def __str__(self):
         return f"{self.student.username} viewed {self.unit.title}"
+class LearningPoint(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="learning_points")
+    text = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.text
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+class CourseReview(models.Model):
+    course = models.ForeignKey("Course", related_name="reviews", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.PositiveSmallIntegerField(
+        default=5,
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('course', 'user')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.course.title} - {self.rating}★ by {self.user.username}"

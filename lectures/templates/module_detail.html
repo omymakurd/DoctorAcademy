@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ module.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Module Header -->
+    <div class="row">
+        <div class="col-md-4">
+            {% if module.thumbnail %}
+                <img src="{{ module.thumbnail.url }}" class="img-fluid rounded shadow" alt="{{ module.title }}">
+            {% else %}
+                <img src="{% static 'images/default-module.jpg' %}" class="img-fluid rounded shadow" alt="No Image">
+            {% endif %}
+        </div>
+
+        <div class="col-md-8">
+            <h2 class="fw-bold">{{ module.title }}</h2>
+
+            <p class="text-muted mb-1">
+                {% if module.basic_system %}
+                    {{ module.basic_system.category.name }} → {{ module.basic_system.name }}
+                {% elif module.clinical_system %}
+                    Clinical: {{ module.clinical_system.name }}
+                {% else %}
+                    No System Assigned
+                {% endif %}
+            </p>
+
+            {% if module.description %}
+            <p>{{ module.description }}</p>
+            {% endif %}
+
+            <h4 class="text-primary mt-3">{{ module.price }} EGP</h4>
+
+            <!-- Purchase or Start -->
+            {% if user.is_authenticated %}
+                {% if user.module_enrollments.filter(module=module).exists %}
+                    <a href="#" class="btn btn-success btn-lg">ابدأ الدراسة</a>
+                {% else %}
+                    <a href="#" class="btn btn-primary btn-lg">اشتري الموديول</a>
+                {% endif %}
+            {% else %}
+                <a href="/login/" class="btn btn-outline-primary btn-lg">سجل دخول علشان تشتري</a>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- Lectures List -->
+    <h4 class="fw-bold">المحاضرات</h4>
+
+    {% if module.basic_lectures.all or module.clinical_lectures.all %}
+        <ul class="list-group">
+
+            {% for lecture in module.basic_lectures.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <strong>{{ lecture.title }}</strong>
+                <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+            </li>
+            {% endfor %}
+
+            {% for lecture in module.clinical_lectures.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <strong>{{ lecture.title }}</strong>
+                <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+            </li>
+            {% endfor %}
+
+        </ul>
+    {% else %}
+        <p class="text-muted">لا يوجد محاضرات بعد.</p>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    /* ============ GLOBAL LAYOUT ============ */
+    .course-player {
+        display: flex;
+        height: calc(100vh - 70px);
+        overflow: hidden;
+        background: #f8f9fa;
+    }
+
+    /* ============ SIDEBAR ============ */
+    .course-sidebar {
+        width: 260px;
+        background: #fff;
+        border-right: 1px solid #ddd;
+        overflow-y: auto;
+        transition: transform 0.3s ease;
+    }
+
+    .course-sidebar h5 {
+        padding: 14px;
+        font-weight: 600;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .course-sidebar a {
+        display: block;
+        padding: 10px 14px;
+        text-decoration: none;
+        color: #333;
+    }
+
+    .course-sidebar .active {
+        background: #007bff;
+        color: #fff !important;
+    }
+
+    /* Drawer mode on mobile */
+    @media (max-width: 992px) {
+        .course-sidebar {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            bottom: 0;
+            z-index: 9999;
+            transform: translateX(-100%);
+        }
+
+        .course-sidebar.show {
+            transform: translateX(0);
+        }
+    }
+
+    /* ============ MAIN VIDEO CONTENT ============ */
+    .course-content {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    /* Responsive video container like Udemy */
+    .video-container {
+        position: relative;
+        width: 100%;
+        padding-top: 56%;
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .video-container video,
+    .video-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* ============ PROGRESS FLOATING BADGE ============ */
+    .progress-floating {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        background: white;
+        border-radius: 50px;
+        padding: 7px 16px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+</style>
+
+<div class="course-player">
+
+    <!-- Sidebar -->
+    <div class="course-sidebar" id="sidebar">
+        <h5>Course Content</h5>
+        {% for unit in units %}
+        <a href="?unit={{ unit.id }}" class="{% if unit.id == current_unit.id %}active{% endif %}">
+            {{ unit.order }}. {{ unit.title }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Content -->
+    <div class="course-content">
+
+        <!-- Mobile toggle button -->
+        <button class="btn btn-outline-primary d-lg-none mb-3" onclick="toggleSidebar()">
+            ☰ Course Content
+        </button>
+
+        <!-- Video/PDF/Text -->
+        <div class="video-container">
+            {% if current_unit.content_type == 'video' %}
+            {% if current_unit.content_file %}
+            <video controls>
+                <source src="{{ current_unit.content_file.url }}" type="video/mp4">
+            </video>
+            {% else %}
+            <iframe src="{{ current_unit.content_url }}" allowfullscreen></iframe>
+            {% endif %}
+            {% elif current_unit.content_type == 'pdf' %}
+            <iframe src="{{ current_unit.content_file.url }}" allowfullscreen></iframe>
+            {% elif current_unit.content_type == 'text' %}
+            <div class="p-3 bg-white rounded shadow-sm">
+                <h3>{{ current_unit.title }}</h3>
+                <p>{{ current_unit.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <h4>{{ current_unit.title }}</h4>
+        {% if quizzes %}
+        <div class="mt-4 p-3 bg-white rounded shadow-sm">
+            <h5>🎯 Quiz</h5>
+
+            {% for quiz in quizzes %}
+            <form action="{% url 'courses:take_quiz' quiz.id %}" method="get">
+                <button class="btn btn-warning w-100 mt-2">start quiz {{ quiz.title }}</button>
+            </form>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+
+        <button class="btn btn-success mt-3" {% if current_unit.id in completed_unit_ids %}disabled{% endif %}
+            id="completeBtn">
+            ✅ {% if current_unit.id in completed_unit_ids %}Completed{% else %}Mark as Completed{% endif %}
+        </button>
+
+    </div>
+</div>
+
+<!-- Floating Progress -->
+<div class="progress-floating">
+    <span>📊 {{ progress_percentage }}% Complete</span>
+</div>
+
+<script>
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('show');
+    }
+
+    document.getElementById("completeBtn")?.addEventListener("click", function () {
+        fetch("{% url 'courses:complete_unit' current_unit.id %}")
+            .then(r => r.json())
+            .then(() => location.reload());
+    });
+</script>
+
+{% endblock %}

@@ -36,8 +36,8 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">{% trans "Home" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="#courses">{% trans "Courses" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="#lectures">{% trans "Lectures" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'courses:all_courses' %}">{% trans "Courses" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'module_list' %}">{% trans "Lectures" %}</a></li>
         <li class="nav-item"><a class="nav-link" href="#store">{% trans "Store" %}</a></li>
 
         <!-- Language Switcher -->
@@ -117,7 +117,7 @@
           <h5 class="card-title">{{ course.title }}</h5>
           <p class="card-price"><i class="bi bi-currency-dollar"></i> {{ course.price }}</p>
           <div class="mt-auto d-flex gap-2">
-            <a href="#" class="btn btn-outline-primary w-50">View</a>
+            <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-outline-primary w-50">{% trans "View" %}</a>
             <a href="#" class="btn btn-warning w-50">Buy</a>
           </div>
         </div>
@@ -167,7 +167,7 @@
                 </small>
               </div>
               <div class="d-grid gap-2">
-                <a href="#" class="btn btn-outline-primary btn-sm">{% trans "View Details" %}</a>
+                <a href="{% url 'module_detail' module.id %}" class="btn btn-outline-primary btn-sm">{% trans "View Details" %}</a>
                 <a href="#" class="btn btn-warning btn-sm">{% trans "Enroll Now" %}</a>
               </div>
             </div>

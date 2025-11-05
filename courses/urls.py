@@ -13,4 +13,14 @@ urlpatterns = [
     path('provider/course/<int:course_id>/units/add/', views.create_unit, name='unit-add'),
     path('provider/unit/<int:unit_id>/edit/', views.edit_unit, name='unit-edit'),
     path('provider/unit/<int:unit_id>/delete/', views.delete_unit, name='unit-delete'),
+
+    path('courses/', views.all_courses, name='all_courses'),
+    path('course/<int:pk>/', views.course_detail, name='course_detail'),
+  
+    path('learn/<int:course_id>/', views.learn_course, name='learn_course'),
+    path('unit/<int:unit_id>/complete/', views.complete_unit, name='complete_unit'),
+    path('checkout/<int:course_id>/', views.checkout, name='checkout'),
+    path('process/<int:course_id>/', views.process_checkout, name='process_checkout'),
+    path('quiz/<int:quiz_id>/', views.take_quiz_inline, name='take_quiz'),
+
 ]

@@ -101,3 +101,10 @@ def logout_view(request):
     logout(request)
     messages.info(request, "👋 You have been logged out.")
     return redirect('auth')
+def student_dashboard(request):
+    enrolled_courses = request.user.enrollments.all()  # أو حسب اسم الريليشن عندك
+    lang = request.LANGUAGE_CODE  # أو request.session.get('lang', 'en')
+    return render(request, 'users\student_dashboard.html', {
+        'enrolled_courses': enrolled_courses,
+        'lang': lang,
+    })
