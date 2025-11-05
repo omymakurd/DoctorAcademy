@@ -195,42 +195,87 @@ def course_detail(request, pk):
 def learn_course(request, course_id):
     course = get_object_or_404(Course, id=course_id)
 
+    # تأكد أن المستخدم مسجل بالكورس
     if not Enrollment.objects.filter(student=request.user, course=course).exists():
         return HttpResponseForbidden("You must enroll to access this course.")
 
-    units = course.units.all().order_by('order')
+    # الوحدات (الدروس)
+    units = course.units.all().order_by("order")
 
     if not units.exists():
         return render(request, "course_no_content.html", {"course": course})
 
+    # تحديد الدرس الحالي
     unit_id = request.GET.get("unit")
     if unit_id:
         current_unit = get_object_or_404(CourseUnit, id=unit_id, course=course)
     else:
         current_unit = units.first()
 
-    # ✅ جلب الكويزات التابعة للوحدة الحالية
-    quizzes = current_unit.quizzes.all()  # Assuming related_name="quizzes" in model
+    # كويزات الوحدة الحالية
+    quizzes = current_unit.quizzes.all()
 
+    # التقدّم العام
     progress, _ = CourseProgress.objects.get_or_create(
         student=request.user,
         course=course
     )
 
-    if current_unit and not progress.completed_units.filter(id=current_unit.id).exists():
-        progress.completed_units.add(current_unit)
-        progress.save()
-
     total_units = units.count()
+    completed_unit_ids = list(progress.completed_units.values_list("id", flat=True))
+
+    # 🧠 تحقق من الكويزات في الوحدة الحالية
+    all_quizzes_completed = True
+    for quiz in quizzes:
+        last_attempt = quiz.attempts.filter(user=request.user).order_by("-started_at").first()
+        if not last_attempt or not last_attempt.passed:
+            all_quizzes_completed = False
+            break
+
+    # ✅ اعتبر الوحدة منتهية فقط إذا أنهى الكويزات أو ما فيها كويز
+    if current_unit and (not quizzes.exists() or all_quizzes_completed):
+        if current_unit.id not in completed_unit_ids:
+            progress.completed_units.add(current_unit)
+            progress.save()
+            completed_unit_ids.append(current_unit.id)
+
+    # النسبة
     completed_units = progress.completed_units.count()
     progress_percentage = int((completed_units / total_units) * 100) if total_units else 0
+
+    # 🧩 معلومات تفصيلية لكل كويز
+ # 🧮 بيانات الكويزات مع آخر محاولة
+    quiz_data = []
+    for quiz in quizzes:
+        attempts = quiz.attempts.filter(user=request.user).order_by('-started_at')
+        last_attempt = attempts.first() if attempts.exists() else None
+        attempts_count = attempts.count()
+
+        quiz_data.append({
+            "quiz": quiz,
+            "attempts": attempts,
+            "last_attempt": last_attempt,
+            "attempts_count": attempts_count,
+        })
+
+
+    # 🧭 حساب الدرس التالي
+    next_unit = None
+    unit_list = list(units)
+    for index, unit in enumerate(unit_list):
+        if unit.id == current_unit.id and index + 1 < len(unit_list):
+            next_unit = unit_list[index + 1]
+            break
 
     context = {
         "course": course,
         "units": units,
         "current_unit": current_unit,
-        "quizzes": quizzes,   # ✅ أضفنا هذا
+        "quizzes": quizzes,
+        "quiz_data": quiz_data,
         "progress_percentage": progress_percentage,
+        "completed_unit_ids": completed_unit_ids,
+        "next_unit": next_unit,  # 👈 الجديد المهم
     }
 
     return render(request, "learn_course.html", context)
@@ -288,75 +333,145 @@ def process_checkout(request, course_id):
 
     return redirect('courses:checkout', course_id=course.id)
 
-from django.shortcuts import get_object_or_404, redirect, render
-from .models import CourseUnit, Quiz
-from django.contrib import messages
-from .models import QuizAttempt
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import Quiz, QuizAttempt, CourseUnit, Choice
+# --- Quiz views (enhanced) ---
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse, HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.utils import timezone
+from .models import Quiz, QuizAttempt, QuizAttemptDetail, Question, Choice
+from django.urls import reverse
 
 @login_required
-def take_quiz_inline(request, quiz_id):
+def start_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id, published=True)
+    attempts_done = QuizAttempt.objects.filter(user=request.user, quiz=quiz).count()
+    if attempts_done >= quiz.max_attempts:
+        return HttpResponseForbidden('No attempts left')
+
+    attempt_number = attempts_done + 1
+    attempt = QuizAttempt.objects.create(user=request.user, quiz=quiz, attempt_number=attempt_number)
+    return redirect('courses:quiz-take', quiz_id=quiz.id)
+
+
+@login_required
+def take_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id, published=True)
+    attempt = QuizAttempt.objects.filter(user=request.user, quiz=quiz, is_submitted=False).order_by('-started_at').first()
+    if not attempt:
+        return redirect('courses:quiz-start', quiz_id=quiz.id)
+
+    questions = list(quiz.questions.prefetch_related('choices').all())
+    if quiz.randomize_questions:
+        import random
+        random.shuffle(questions)
+
+    time_limit_seconds = quiz.time_limit * 60 if quiz.time_limit else None
+
+    return render(request, 'quiz_take.html', {
+        'quiz': quiz,
+        'attempt': attempt,
+        'questions': questions,
+        'time_limit_seconds': time_limit_seconds,
+    })
+
+
+@login_required
+@transaction.atomic
+def submit_quiz(request, quiz_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid method'}, status=400)
+
+    quiz = get_object_or_404(Quiz, id=quiz_id, published=True)
+    attempt = QuizAttempt.objects.filter(user=request.user, quiz=quiz, is_submitted=False).order_by('-started_at').first()
+    if not attempt:
+        return JsonResponse({'error': 'Attempt not found or already submitted'}, status=404)
+
+    # server-side time limit enforcement
+    if quiz.time_limit:
+        elapsed = (timezone.now() - attempt.started_at).total_seconds()
+        if elapsed > quiz.time_limit * 60 + 5:
+            attempt.is_submitted = True
+            attempt.mark_finished()
+            attempt.score = 0
+            attempt.save()
+            return JsonResponse({'status': 'timeout', 'message': 'Time limit exceeded'}, status=200)
+
+    correct = 0
+    total = quiz.questions.count()
+    attempt.details.all().delete()
+
+    for question in quiz.questions.all():
+        selected_id = request.POST.get(f'question_{question.id}')
+        selected_choice = None
+        is_correct = False
+        if selected_id:
+            try:
+                selected_choice = question.choices.get(id=int(selected_id))
+                is_correct = selected_choice.is_correct
+            except Exception:
+                selected_choice = None
+        if is_correct:
+            correct += 1
+        QuizAttemptDetail.objects.create(
+            attempt=attempt,
+            question=question,
+            selected_choice=selected_choice,
+            is_correct=is_correct
+        )
+
+    percentage = round((correct / total) * 100, 1) if total else 0
+    attempt.score = percentage
+    attempt.is_submitted = True
+    attempt.mark_finished()
+    attempt.save()
+
+    passed = percentage >= quiz.pass_percentage
+    return JsonResponse({'status': 'ok', 'score': percentage, 'passed': passed, 'attempt_id': attempt.id})
+
+
+@login_required
+def quiz_result(request, quiz_id, attempt_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
-    unit = quiz.unit
-    course = unit.course
+    attempt = get_object_or_404(QuizAttempt, id=attempt_id, user=request.user)
+    details = attempt.details.select_related('question', 'selected_choice').all()
+    return render(request, 'quiz_result.html', {
+        'quiz': quiz,
+        'attempt': attempt,
+        'details': details,
+    })
 
-    # عدد المحاولات
-    attempts = QuizAttempt.objects.filter(user=request.user, quiz=quiz).count()
 
-    if attempts >= quiz.max_attempts:
-        return render(request, "quiz_result_review.html", {
-            "quiz": quiz,
-            "passed": False,
-            "remaining_attempts": 0,
-            "score": 0,
-            "total": quiz.questions.count(),
-            "user_answers": {},
-            "correct_answers": {q.id: q.get_correct_choice().text for q in quiz.questions.all()},
-            "percentage": 0
-        })
+@login_required
+def quiz_history(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    attempts = QuizAttempt.objects.filter(user=request.user, quiz=quiz).order_by('-started_at')
+    return render(request, 'quiz_history.html', {'quiz': quiz, 'attempts': attempts})
 
-    if request.method == "POST":
-        correct = 0
-        user_answers = {}
 
-        for question in quiz.questions.all():
-            selected_id = request.POST.get(f"question_{question.id}")
-            if selected_id:
-                selected_choice = question.choices.get(id=selected_id)
-                user_answers[question.id] = selected_choice.text
-                if selected_choice.is_correct:
-                    correct += 1
-            else:
-                user_answers[question.id] = "No answer"
-
-        total = quiz.questions.count()
-        score = correct
-        percentage = round((correct / total) * 100, 1)
-
-        QuizAttempt.objects.create(user=request.user, quiz=quiz, score=percentage)
-
-        passed = percentage >= quiz.pass_percentage
-
-        correct_answers = {q.id: q.get_correct_choice().text for q in quiz.questions.all()}
-
-        remaining_attempts = quiz.max_attempts - (attempts + 1)
-
-        # إذا نجح → نعدي الوحدة
-        if passed:
-            progress, _ = CourseProgress.objects.get_or_create(student=request.user, course=course)
-            progress.completed_units.add(unit)
-
-        return render(request, "quiz_review.html", {
-            "quiz": quiz,
-            "passed": passed,
-            "score": score,
-            "total": total,
-            "percentage": percentage,
-            "user_answers": user_answers,
-            "correct_answers": correct_answers,
-            "remaining_attempts": max(remaining_attempts, 0)
-        })
-
-    return render(request, "quiz_inline.html", {"quiz": quiz})
+@login_required
+def quiz_autosave(request, quiz_id, attempt_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid method'}, status=400)
+    attempt = get_object_or_404(QuizAttempt, id=attempt_id, user=request.user, is_submitted=False)
+    attempt.details.all().delete()
+    for key, value in request.POST.items():
+        if not key.startswith('question_'):
+            continue
+        try:
+            qid = int(key.split('_', 1)[1])
+        except Exception:
+            continue
+        try:
+            question = Question.objects.get(id=qid)
+            selected_choice = question.choices.filter(id=int(value)).first() if value else None
+            is_correct = selected_choice.is_correct if selected_choice else False
+            QuizAttemptDetail.objects.create(
+                attempt=attempt,
+                question=question,
+                selected_choice=selected_choice,
+                is_correct=is_correct
+            )
+        except Question.DoesNotExist:
+            continue
+    return JsonResponse({'status': 'ok'})

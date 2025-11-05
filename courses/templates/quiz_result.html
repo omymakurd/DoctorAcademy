@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm text-center border-0">
+        <div class="card-body">
+          <h3 class="fw-bold mb-3">{{ quiz.title }}</h3>
+          <h1 class="display-4 mb-3 text-primary">{{ attempt.score }}%</h1>
+
+          <p class="mb-3">
+            {% if attempt.score >= quiz.pass_percentage %}
+              <span class="badge bg-success px-3 py-2">✅ Passed</span>
+            {% else %}
+              <span class="badge bg-danger px-3 py-2">❌ Failed</span>
+            {% endif %}
+            &nbsp;—&nbsp;
+            Duration: {{ attempt.duration_seconds|default:"N/A" }}s
+          </p>
+
+          <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+            <!-- Try Again -->
+            <a href="{% url 'courses:quiz-start' quiz.id %}" class="btn btn-warning">
+              🔁 Try Again
+            </a>
+
+            <!-- Go to Next Lesson -->
+            {% if next_unit %}
+            <a href="{% url 'courses:learn_course' quiz.unit.course.id %}?unit={{ next_unit.id }}" class="btn btn-success">
+              👉 Next Lesson
+            </a>
+            {% else %}
+            <a href="{% url 'courses:learn_course' quiz.unit.course.id %}" class="btn btn-outline-secondary">
+              🔚 Back to Course
+            </a>
+            {% endif %}
+
+            <!-- View Attempts -->
+            <a href="{% url 'courses:quiz-history' quiz.id %}" class="btn btn-outline-primary">
+              📜 View Attempts
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Questions -->
+      <div class="mt-5">
+        {% for detail in details %}
+        <div class="card mb-3 shadow-sm border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <strong>{{ forloop.counter }}.</strong> {{ detail.question.text }}
+              </div>
+              <div>
+                {% if detail.is_correct %}
+                <span class="badge bg-success">Correct</span>
+                {% else %}
+                <span class="badge bg-danger">Wrong</span>
+                {% endif %}
+              </div>
+            </div>
+            <hr>
+            <p><strong>Your answer:</strong>
+              {% if detail.selected_choice %}
+                {{ detail.selected_choice.text }}
+              {% else %}
+                <em>Not answered</em>
+              {% endif %}
+            </p>
+            <p><strong>Correct answer:</strong> {{ detail.question.get_correct_choice.text }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

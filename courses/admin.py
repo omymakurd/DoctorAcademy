@@ -9,9 +9,33 @@ from .models import (
 # ========================
 # Inline Classes
 # ========================
+class ChoiceInline(admin.TabularInline):
+    model = Choice
+    extra = 2
+    fields = ('text', 'is_correct')
+    show_change_link = True
+
+class QuestionInline(admin.StackedInline):
+    model = Question
+    extra = 1
+    show_change_link = True
+    inlines = [ChoiceInline]
+    fieldsets = (
+        ('Question Info', {'fields': ('text',)}),
+    )
+
+class QuizInline(admin.StackedInline):
+    model = Quiz
+    extra = 1
+    show_change_link = True
+    fieldsets = (
+        ('Quiz Information', {'fields': ('title', 'description')}),
+    )
+
 class CourseUnitInline(admin.TabularInline):
     model = CourseUnit
     extra = 1
+    show_change_link = True
 
 class LearningPointInline(admin.TabularInline):
     model = LearningPoint
@@ -23,18 +47,6 @@ class CourseReviewInline(admin.TabularInline):
     readonly_fields = ('user', 'rating', 'comment', 'created_at')
     can_delete = False
     show_change_link = True
-
-class QuizInline(admin.TabularInline):
-    model = Quiz
-    extra = 1
-
-class QuestionInline(admin.TabularInline):
-    model = Question
-    extra = 1
-
-class ChoiceInline(admin.TabularInline):
-    model = Choice
-    extra = 1
 
 # ========================
 # Course Admin
@@ -49,10 +61,7 @@ class CourseAdmin(admin.ModelAdmin):
 
     def thumbnail_preview(self, obj):
         if obj.thumbnail:
-            return format_html(
-                '<img src="{}" width="60" height="40" style="object-fit:cover;border-radius:5px;" />',
-                obj.thumbnail.url
-            )
+            return format_html('<img src="{}" width="60" height="40" style="object-fit:cover;border-radius:5px;" />', obj.thumbnail.url)
         return "—"
     thumbnail_preview.short_description = "Thumbnail"
 
@@ -78,26 +87,38 @@ class CourseAdmin(admin.ModelAdmin):
 class CourseUnitAdmin(admin.ModelAdmin):
     list_display = ('title', 'course', 'content_type', 'order', 'created_at')
     search_fields = ('title', 'course__title')
-    inlines = [QuizInline]
     list_filter = ('content_type', 'created_at')
+    inlines = [QuizInline]
 
 # ========================
 # Quiz Admin
 # ========================
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
-    list_display = ('title', 'unit', 'created_at')
+    list_display = ('title', 'unit', 'question_count', 'created_at')
     search_fields = ('title', 'unit__title')
     inlines = [QuestionInline]
+
+    def question_count(self, obj):
+        return obj.questions.count()
+    question_count.short_description = "Questions"
 
 # ========================
 # Question Admin
 # ========================
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('text', 'quiz', 'created_at')
+    list_display = ('text', 'quiz', 'choice_count', 'correct_choices', 'created_at')
     search_fields = ('text', 'quiz__title')
     inlines = [ChoiceInline]
+
+    def choice_count(self, obj):
+        return obj.choices.count()
+    choice_count.short_description = "Total Choices"
+
+    def correct_choices(self, obj):
+        return obj.choices.filter(is_correct=True).count()
+    correct_choices.short_description = "Correct Answers"
 
 # ========================
 # Choice Admin
@@ -105,6 +126,7 @@ class QuestionAdmin(admin.ModelAdmin):
 @admin.register(Choice)
 class ChoiceAdmin(admin.ModelAdmin):
     list_display = ('text', 'question', 'is_correct')
+    list_filter = ('is_correct',)
     search_fields = ('text', 'question__text')
 
 # ========================

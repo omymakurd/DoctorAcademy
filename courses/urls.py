@@ -21,6 +21,13 @@ urlpatterns = [
     path('unit/<int:unit_id>/complete/', views.complete_unit, name='complete_unit'),
     path('checkout/<int:course_id>/', views.checkout, name='checkout'),
     path('process/<int:course_id>/', views.process_checkout, name='process_checkout'),
-    path('quiz/<int:quiz_id>/', views.take_quiz_inline, name='take_quiz'),
-
+    path('quiz/<int:quiz_id>/start/', views.start_quiz, name='quiz-start'),
+    path('quiz/<int:quiz_id>/take/', views.take_quiz, name='quiz-take'),
+    path('quiz/<int:quiz_id>/submit/', views.submit_quiz, name='quiz-submit'),
+    path('quiz/<int:quiz_id>/result/<int:attempt_id>/', views.quiz_result, name='quiz-result'),
+    path('quiz/<int:quiz_id>/history/', views.quiz_history, name='quiz-history'),
+    path('quiz/<int:quiz_id>/autosave/<int:attempt_id>/', views.quiz_autosave, name='quiz-autosave'),
 ]
+
+
+

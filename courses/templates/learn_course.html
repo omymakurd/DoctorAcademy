@@ -1,180 +1,234 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load course_tags %}
 
 {% block content %}
 
 <style>
-    /* ============ GLOBAL LAYOUT ============ */
-    .course-player {
-        display: flex;
-        height: calc(100vh - 70px);
-        overflow: hidden;
-        background: #f8f9fa;
-    }
+  /* ==================== GLOBAL LAYOUT ==================== */
+  .course-player {
+    display: flex;
+    height: calc(100vh - 70px);
+    overflow: hidden;
+    background: #f8f9fa;
+  }
 
-    /* ============ SIDEBAR ============ */
+  /* ==================== SIDEBAR ==================== */
+  .course-sidebar {
+    width: 260px;
+    background: #fff;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+  }
+
+  .course-sidebar h5 {
+    padding: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .course-sidebar a {
+    display: block;
+    padding: 10px 14px;
+    text-decoration: none;
+    color: #333;
+    transition: 0.2s;
+  }
+
+  .course-sidebar a:hover {
+    background: #f1f1f1;
+  }
+
+  .course-sidebar .active {
+    background: #007bff;
+    color: #fff !important;
+  }
+
+  /* Drawer mode on mobile */
+  @media (max-width: 992px) {
     .course-sidebar {
-        width: 260px;
-        background: #fff;
-        border-right: 1px solid #ddd;
-        overflow-y: auto;
-        transition: transform 0.3s ease;
+      position: fixed;
+      top: 70px;
+      left: 0;
+      bottom: 0;
+      z-index: 9999;
+      transform: translateX(-100%);
     }
 
-    .course-sidebar h5 {
-        padding: 14px;
-        font-weight: 600;
-        border-bottom: 1px solid #ddd;
+    .course-sidebar.show {
+      transform: translateX(0);
     }
+  }
 
-    .course-sidebar a {
-        display: block;
-        padding: 10px 14px;
-        text-decoration: none;
-        color: #333;
-    }
+  /* ==================== MAIN CONTENT ==================== */
+  .course-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+  }
 
-    .course-sidebar .active {
-        background: #007bff;
-        color: #fff !important;
-    }
+  .video-container {
+    position: relative;
+    width: 100%;
+    padding-top: 56%;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
 
-    /* Drawer mode on mobile */
-    @media (max-width: 992px) {
-        .course-sidebar {
-            position: fixed;
-            top: 70px;
-            left: 0;
-            bottom: 0;
-            z-index: 9999;
-            transform: translateX(-100%);
-        }
+  .video-container video,
+  .video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
 
-        .course-sidebar.show {
-            transform: translateX(0);
-        }
-    }
+  /* ==================== PROGRESS FLOATING BADGE ==================== */
+  .progress-floating {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    background: white;
+    border-radius: 50px;
+    padding: 7px 16px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
 
-    /* ============ MAIN VIDEO CONTENT ============ */
-    .course-content {
-        flex: 1;
-        padding: 20px;
-        overflow-y: auto;
-    }
-
-    /* Responsive video container like Udemy */
-    .video-container {
-        position: relative;
-        width: 100%;
-        padding-top: 56%;
-        background: #000;
-        border-radius: 8px;
-        overflow: hidden;
-        margin-bottom: 20px;
-    }
-
-    .video-container video,
-    .video-container iframe {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-    }
-
-    /* ============ PROGRESS FLOATING BADGE ============ */
-    .progress-floating {
-        position: fixed;
-        right: 20px;
-        bottom: 20px;
-        background: white;
-        border-radius: 50px;
-        padding: 7px 16px;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    }
+  .next-lesson-btn {
+    display: flex;
+    justify-content: end;
+    margin-top: 20px;
+  }
 </style>
 
 <div class="course-player">
 
-    <!-- Sidebar -->
-    <div class="course-sidebar" id="sidebar">
-        <h5>Course Content</h5>
-        {% for unit in units %}
-        <a href="?unit={{ unit.id }}" class="{% if unit.id == current_unit.id %}active{% endif %}">
-            {{ unit.order }}. {{ unit.title }}
-        </a>
-        {% endfor %}
+  <!-- Sidebar -->
+  <div class="course-sidebar" id="sidebar">
+    <h5>📚 Course Content</h5>
+    {% for unit in units %}
+    <a href="?unit={{ unit.id }}" class="{% if unit.id == current_unit.id %}active{% endif %}">
+      {{ unit.order }}. {{ unit.title }}
+      {% if unit.id in completed_unit_ids %}
+      ✅
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Main Content -->
+  <div class="course-content">
+    <button class="btn btn-outline-primary d-lg-none mb-3" onclick="toggleSidebar()">
+      ☰ Course Content
+    </button>
+
+    <!-- Lesson Viewer -->
+    <div class="video-container">
+      {% if current_unit.content_type == 'video' %}
+      {% if current_unit.content_file %}
+      <video controls>
+        <source src="{{ current_unit.content_file.url }}" type="video/mp4">
+      </video>
+      {% else %}
+      <iframe src="{{ current_unit.content_url }}" allowfullscreen></iframe>
+      {% endif %}
+      {% elif current_unit.content_type == 'pdf' %}
+      <iframe src="{{ current_unit.content_file.url }}" allowfullscreen></iframe>
+      {% elif current_unit.content_type == 'text' %}
+      <div class="p-3 bg-white rounded shadow-sm">
+        <h3>{{ current_unit.title }}</h3>
+        <p>{{ current_unit.description|safe }}</p>
+      </div>
+      {% endif %}
     </div>
 
-    <!-- Content -->
-    <div class="course-content">
+    <h4 class="fw-bold">{{ current_unit.title }}</h4>
 
-        <!-- Mobile toggle button -->
-        <button class="btn btn-outline-primary d-lg-none mb-3" onclick="toggleSidebar()">
-            ☰ Course Content
-        </button>
+    <!-- Quiz Section -->
+{% if quizzes %}
+<div class="mt-4 p-3 bg-white rounded shadow-sm">
+  <h5>🎯 Quiz</h5>
 
-        <!-- Video/PDF/Text -->
-        <div class="video-container">
-            {% if current_unit.content_type == 'video' %}
-            {% if current_unit.content_file %}
-            <video controls>
-                <source src="{{ current_unit.content_file.url }}" type="video/mp4">
-            </video>
-            {% else %}
-            <iframe src="{{ current_unit.content_url }}" allowfullscreen></iframe>
-            {% endif %}
-            {% elif current_unit.content_type == 'pdf' %}
-            <iframe src="{{ current_unit.content_file.url }}" allowfullscreen></iframe>
-            {% elif current_unit.content_type == 'text' %}
-            <div class="p-3 bg-white rounded shadow-sm">
-                <h3>{{ current_unit.title }}</h3>
-                <p>{{ current_unit.description }}</p>
-            </div>
-            {% endif %}
-        </div>
+{% for data in quiz_data %}
+  {% with quiz=data.quiz attempts=data.attempts last_attempt=data.last_attempt %}
+    <div class="border p-2 rounded mb-3">
+      <strong>{{ quiz.title }}</strong><br>
+      Attempts: {{ data.attempts_count }} / {{ quiz.max_attempts }}
 
-        <h4>{{ current_unit.title }}</h4>
-        {% if quizzes %}
-        <div class="mt-4 p-3 bg-white rounded shadow-sm">
-            <h5>🎯 Quiz</h5>
-
-            {% for quiz in quizzes %}
-            <form action="{% url 'courses:take_quiz' quiz.id %}" method="get">
-                <button class="btn btn-warning w-100 mt-2">start quiz {{ quiz.title }}</button>
-            </form>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-
-        <button class="btn btn-success mt-3" {% if current_unit.id in completed_unit_ids %}disabled{% endif %}
-            id="completeBtn">
-            ✅ {% if current_unit.id in completed_unit_ids %}Completed{% else %}Mark as Completed{% endif %}
-        </button>
-
+      {% if not last_attempt %}
+        <!-- 🟢 لم يبدأ الكويز -->
+        <form action="{% url 'courses:quiz-take' quiz.id %}" method="get" class="mt-2">
+          <button class="btn btn-warning w-100">Start Quiz</button>
+        </form>
+      {% elif not last_attempt.passed %}
+        <!-- 🔴 فشل آخر محاولة -->
+        <div class="alert alert-danger mt-2">You did not pass this quiz.</div>
+        <form action="{% url 'courses:quiz-take' quiz.id %}" method="get" class="mt-2">
+          <button class="btn btn-outline-warning w-100">Try Again</button>
+        </form>
+      {% else %}
+        <!-- ✅ نجح -->
+        <div class="alert alert-success mt-2">You passed this quiz!</div>
+      {% endif %}
     </div>
+  {% endwith %}
+{% endfor %}
+
+</div>
+{% endif %}
+
+
+
+    <!-- Complete Button -->
+    <button class="btn btn-success mt-3" id="completeBtn"
+      {% if current_unit.id in completed_unit_ids %}disabled{% endif %}>
+      ✅ {% if current_unit.id in completed_unit_ids %}Completed{% else %}Mark as Completed{% endif %}
+    </button>
+
+    <!-- Next Lesson -->
+    <div class="next-lesson-btn">
+      {% if current_unit.id|get_next_unit_id:units %}
+      {% with next_id=current_unit.id|get_next_unit_id:units %}
+      <a href="?unit={{ next_id }}" id="nextLessonBtn" class="btn btn-primary ms-2 {% if current_unit.id not in completed_unit_ids %}disabled{% endif %}">
+        Next Lesson →
+      </a>
+      {% endwith %}
+      {% else %}
+      <a href="#" class="btn btn-success disabled">🎉 Course Completed</a>
+      {% endif %}
+    </div>
+
+  </div>
 </div>
 
 <!-- Floating Progress -->
 <div class="progress-floating">
-    <span>📊 {{ progress_percentage }}% Complete</span>
+  <span>📊 {{ progress_percentage }}% Complete</span>
 </div>
 
 <script>
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('show');
-    }
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('show');
+  }
 
-    document.getElementById("completeBtn")?.addEventListener("click", function () {
-        fetch("{% url 'courses:complete_unit' current_unit.id %}")
-            .then(r => r.json())
-            .then(() => location.reload());
-    });
+  // ✅ Mark as completed
+  document.getElementById("completeBtn")?.addEventListener("click", function () {
+    fetch("{% url 'courses:complete_unit' current_unit.id %}")
+      .then(r => r.json())
+      .then(() => {
+        document.getElementById("completeBtn").innerText = "✅ Completed";
+        document.getElementById("completeBtn").disabled = true;
+        document.getElementById("nextLessonBtn")?.classList.remove("disabled");
+      });
+  });
 </script>
 
 {% endblock %}
