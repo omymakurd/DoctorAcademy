@@ -38,7 +38,10 @@
         <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">{% trans "Home" %}</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'courses:all_courses' %}">{% trans "Courses" %}</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'module_list' %}">{% trans "Lectures" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="#store">{% trans "Store" %}</a></li>
+        <li class="nav-item">
+  <a class="nav-link" href="{% url 'store_home' %}">Store</a>
+</li>
+
 
         <!-- Language Switcher -->
         <li class="nav-item dropdown ms-3">
@@ -233,48 +236,108 @@
 </section>
 <!-- Store Highlights -->
 <section id="store" class="py-5 bg-light">
-<div class="container py-5 bg-light">
-  <h2 class="fw-bold mb-4 text-primary">{% trans "Store Highlights" %}</h2>
-  <div class="card-container">
-    <div class="card">
-      <img src="{% static 'images/store1.jpg' %}" class="card-img-top" alt="Item 1">
-      <div class="card-body">
-        <h6 class="card-title">{% trans "Medical Textbook" %}</h6>
-        <p class="card-price">50</p>
-        <a href="#" class="btn btn-warning">{% trans "Add to Cart" %}</a>
-      </div>
+  <div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fw-bold text-primary">{% trans "Store Highlights" %}</h2>
+      <a href="{% url 'store_home' %}" class="btn btn-outline-primary btn-sm">{% trans "View All" %}</a>
     </div>
 
-    <div class="card">
-      <img src="{% static 'images/store2.jpg' %}" class="card-img-top" alt="Item 2">
-      <div class="card-body">
-        <h6 class="card-title">{% trans "Surgical Kit" %}</h6>
-        <p class="card-price">120</p>
-        <a href="#" class="btn btn-warning">{% trans "Add to Cart" %}</a>
+    <div class="row g-4">
+      {% for product in store_products %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="card shadow-sm h-100">
+
+          {% if product.image %}
+          <img src="{{ product.image.url }}" class="card-img-top" style="height:230px; object-fit:cover;">
+          {% else %}
+          <img src="{% static 'images/default-product.jpg' %}" class="card-img-top" style="height:230px; object-fit:cover;">
+          {% endif %}
+
+          <div class="card-body d-flex flex-column">
+            <h6 class="fw-semibold">{{ product.name }}</h6>
+
+            <!-- السعر والخصم -->
+            {% if product.discount > 0 %}
+              <p class="mb-2">
+                <span class="text-danger fw-bold">${{ product.final_price }}</span>
+                <small class="text-muted text-decoration-line-through">${{ product.price }}</small>
+              </p>
+            {% else %}
+              <p class="text-warning fw-bold mb-2">${{ product.price }}</p>
+            {% endif %}
+
+            <div class="d-flex gap-1 mt-auto">
+              <!-- زر View: يفتح مودال -->
+              <button class="btn btn-outline-primary btn-sm w-50" data-bs-toggle="modal" data-bs-target="#productModal{{ product.id }}">
+                <i class="bi bi-eye"></i> {% trans "View" %}
+              </button>
+
+              <!-- زر إضافة للسلة -->
+              <form method="post" action="{% url 'add_to_cart' product.id %}" class="w-50">
+                {% csrf_token %}
+                <button class="btn btn-warning btn-sm w-100">
+                  <i class="bi bi-cart-plus"></i>
+                </button>
+              </form>
+            </div>
+
+          </div>
+        </div>
       </div>
+
+      <!-- مودال المنتج -->
+      <div class="modal fade" id="productModal{{ product.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            
+            <div class="modal-header">
+              <h5 class="modal-title">{{ product.name }}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body row">
+              <div class="col-md-5">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="img-fluid rounded">
+                {% else %}
+                <img src="{% static 'images/default-product.jpg' %}" class="img-fluid rounded">
+                {% endif %}
+              </div>
+
+              <div class="col-md-7">
+                <p class="text-muted">{{ product.description|default:"No description" }}</p>
+
+                {% if product.discount > 0 %}
+                  <h4 class="text-danger fw-bold">${{ product.final_price }}</h4>
+                  <small class="text-muted text-decoration-line-through">${{ product.price }}</small>
+                {% else %}
+                  <h4 class="text-warning fw-bold">${{ product.price }}</h4>
+                {% endif %}
+
+                <form method="post" action="{% url 'add_to_cart' product.id %}">
+                  {% csrf_token %}
+                  <label class="mt-3 fw-semibold">{% trans "Quantity" %}</label>
+                  <input type="number" name="quantity" class="form-control w-50" min="1" value="1">
+                  
+                  <button class="btn btn-primary mt-3 w-100">
+                    <i class="bi bi-cart-plus"></i> {% trans "Add to Cart" %}
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% empty %}
+        <p class="text-muted">{% trans "No products available yet." %}</p>
+      {% endfor %}
     </div>
 
-    <div class="card">
-      <img src="{% static 'images/store3.jpg' %}" class="card-img-top" alt="Item 3">
-      <div class="card-body">
-        <h6 class="card-title">{% trans "Medical Instruments" %}</h6>
-        <p class="card-price">200</p>
-        <a href="#" class="btn btn-warning">{% trans "Add to Cart" %}</a>
-      </div>
-    </div>
-
-    <div class="card">
-      <img src="{% static 'images/store4.jpg' %}" class="card-img-top" alt="Item 4">
-      <div class="card-body">
-        <h6 class="card-title">{% trans "Anatomy Models" %}</h6>
-        <p class="card-price">80</p>
-        <a href="#" class="btn btn-warning">{% trans "Add to Cart" %}</a>
-      </div>
-    </div>
   </div>
-</div>
-
 </section>
+
 
 <!-- Upcoming Webinars -->
 <section class="py-5">

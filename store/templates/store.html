@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% block content %}
+
+<div class="container py-5">
+  <h2 class="fw-bold mb-4 text-primary text-center">{% trans "Medical Store" %}</h2>
+
+  <div class="row g-4">
+    {% for product in products %}
+    <div class="col-6 col-md-4 col-lg-3">
+      <div class="card shadow-sm h-100">
+        
+        {% if product.image %}
+        <img src="{{ product.image.url }}" class="card-img-top" style="height:230px; object-fit:cover;">
+        {% else %}
+        <img src="{% static 'images/default-product.jpg' %}" class="card-img-top" style="height:230px; object-fit:cover;">
+        {% endif %}
+
+        <div class="card-body d-flex flex-column">
+          <h6 class="card-title fw-semibold">{{ product.name }}</h6>
+          <p class="text-muted small flex-grow-1">{{ product.description|truncatewords:10 }}</p>
+
+          <p class="fw-bold text-warning mb-2">${{ product.price }}</p>
+
+          <div class="d-flex gap-1 mt-auto">
+            <!-- View button trigger modal -->
+            <button class="btn btn-outline-primary btn-sm w-50" data-bs-toggle="modal" data-bs-target="#productModal{{ product.id }}">
+              <i class="bi bi-eye"></i> {% trans "View" %}
+            </button>
+
+            <!-- Add to cart direct -->
+            <form method="post" action="{% url 'add_to_cart' product.id %}" class="w-50">
+              {% csrf_token %}
+              <button class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-cart-plus"></i>
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MODAL POPUP -->
+    <div class="modal fade" id="productModal{{ product.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          
+          <div class="modal-header">
+            <h5 class="modal-title">{{ product.name }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body row">
+            <div class="col-md-5">
+              {% if product.image %}
+              <img src="{{ product.image.url }}" class="img-fluid rounded">
+              {% else %}
+              <img src="{% static 'images/default-product.jpg' %}" class="img-fluid rounded">
+              {% endif %}
+            </div>
+
+            <div class="col-md-7">
+              <p class="text-muted">{{ product.description }}</p>
+              <h4 class="text-warning fw-bold">${{ product.price }}</h4>
+
+              <form method="post" action="{% url 'add_to_cart' product.id %}">
+                {% csrf_token %}
+                <label class="mt-3 fw-semibold">{% trans "Quantity" %}</label>
+                <input type="number" name="quantity" class="form-control w-50" min="1" value="1">
+                
+                <button class="btn btn-primary mt-3 w-100">
+                  <i class="bi bi-cart-plus"></i> {% trans "Add to Cart" %}
+                </button>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% empty %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-bag-x fs-1"></i>
+      <p class="mt-2">{% trans "No products available at the moment." %}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
