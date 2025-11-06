@@ -34,6 +34,11 @@ urlpatterns = [
     path('ai_chatbot/', include('ai_chatbot.urls')),
     path('users/', include('users.urls')),
     path('zoom/', include('zoom_integration.urls')),
+    path('webinars/', include('webinars.urls')),
+    path('faq/', views.faq, name='faq'),
+    path('help-center/', views.help_center, name='help_center'),
+    path('contact/', views.contact, name='contact'),
+
 
 ]
 urlpatterns += [

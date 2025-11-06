@@ -344,36 +344,26 @@
   <div class="container">
     <h2 class="fw-bold mb-4 text-primary">{% trans "Upcoming Webinars" %}</h2>
     <div class="row g-4">
+      {% for webinar in webinars %}
       <div class="col-md-4">
         <div class="card h-100 shadow-sm">
-          <img src="{% static 'images/webinar1.jpg' %}" class="card-img-top" alt="Webinar 1">
+          {% if webinar.image %}
+          <img src="{{ webinar.image.url }}" class="card-img-top" alt="{{ webinar.title }}">
+          {% else %}
+          <img src="{% static 'images/default-webinar.jpg' %}" class="card-img-top" alt="{{ webinar.title }}">
+          {% endif %}
           <div class="card-body">
-            <h6 class="card-title">{% trans "Cardiology Trends 2025" %}</h6>
-            <p class="text-muted small">{% trans "Date: Nov 15, 2025" %}</p>
-            <a href="#" class="btn btn-outline-primary w-100">{% trans "Register" %}</a>
+            <h6 class="card-title">{{ webinar.title }}</h6>
+            <p class="text-muted small">{{ webinar.date|date:"F j, Y" }}</p>
+            <a href="{{ webinar.link }}" class="btn btn-outline-primary w-100">{% trans "Register" %}</a>
           </div>
         </div>
       </div>
-      <div class="col-md-4">
-        <div class="card h-100 shadow-sm">
-          <img src="{% static 'images/webinar2.jpg' %}" class="card-img-top" alt="Webinar 2">
-          <div class="card-body">
-            <h6 class="card-title">{% trans "Surgical Innovations" %}</h6>
-            <p class="text-muted small">{% trans "Date: Dec 2, 2025" %}</p>
-            <a href="#" class="btn btn-outline-primary w-100">{% trans "Register" %}</a>
-          </div>
-        </div>
+      {% empty %}
+      <div class="col-12">
+        <p class="text-muted">{% trans "No upcoming webinars." %}</p>
       </div>
-      <div class="col-md-4">
-        <div class="card h-100 shadow-sm">
-          <img src="{% static 'images/webinar3.jpg' %}" class="card-img-top" alt="Webinar 3">
-          <div class="card-body">
-            <h6 class="card-title">{% trans "Medical Imaging Updates" %}</h6>
-            <p class="text-muted small">{% trans "Date: Dec 20, 2025" %}</p>
-            <a href="#" class="btn btn-outline-primary w-100">{% trans "Register" %}</a>
-          </div>
-        </div>
-      </div>
+      {% endfor %}
     </div>
   </div>
 </section>
@@ -414,7 +404,7 @@
       <!-- About -->
       <div class="col-lg-4 col-md-6">
         <h5 class="fw-bold mb-3 text-gradient">Doctor Academy</h5>
-        <p class="mb-4 text-muted small">{% trans "Upgrade your medical skills with certified online courses and interactive lectures from top professionals." %}</p>
+        <p class="mb-4  small" >{% trans "Upgrade your medical skills with certified online courses and interactive lectures from top professionals." %}</p>
         <div class="social-links mt-3">
           <a href="#" class="me-3"><i class="bi bi-facebook"></i></a>
           <a href="#" class="me-3"><i class="bi bi-instagram"></i></a>
@@ -426,19 +416,21 @@
       <div class="col-lg-2 col-md-3 col-6">
         <h6 class="fw-semibold mb-3">{% trans "Explore" %}</h6>
         <ul class="list-unstyled">
-          <li><a href="#">{% trans "Home" %}</a></li>
-          <li><a href="#courses">{% trans "Courses" %}</a></li>
-          <li><a href="#lectures">{% trans "Lectures" %}</a></li>
-          <li><a href="#store">{% trans "Store" %}</a></li>
+          <li><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'courses:all_courses' %}">{% trans "Courses" %}</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'module_list' %}">{% trans "Lectures" %}</a></li>
+        <li class="nav-item">
+  <a class="nav-link" href="{% url 'store_home' %}">Store</a>
+</li>
         </ul>
       </div>
       <!-- Support -->
       <div class="col-lg-2 col-md-3 col-6">
         <h6 class="fw-semibold mb-3">{% trans "Support" %}</h6>
         <ul class="list-unstyled">
-          <li><a href="#">{% trans "FAQ" %}</a></li>
-          <li><a href="#">{% trans "Help Center" %}</a></li>
-          <li><a href="#">{% trans "Contact" %}</a></li>
+        <li><a href="{% url 'faq' %}">{% trans "FAQ" %}</a></li>
+        <li><a href="{% url 'help_center' %}">{% trans "Help Center" %}</a></li>
+        <li><a href="{% url 'contact' %}">{% trans "Contact" %}</a></li>
         </ul>
       </div>
       <!-- Newsletter -->

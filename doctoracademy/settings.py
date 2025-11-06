@@ -62,7 +62,7 @@ INSTALLED_APPS = [
     'zoom_integration',
     'crispy_forms',
     'crispy_bootstrap5',
-    
+    'webinars',
 ]
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 AUTH_USER_MODEL = "users.User"
