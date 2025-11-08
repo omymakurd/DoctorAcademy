@@ -1,7 +1,7 @@
 :root {
   --primary-color: #0D47A1;
   --secondary-color: #1976D2;
-  --accent-color: #FFA000;
+  --accent-color: #f79525;    /* أصفر ذهبي للأزرار */
   --bg-color: #F5F5F5;
   --text-color: #212121;
   --text-muted: #757575;
@@ -239,3 +239,57 @@ footer hr { border-color: rgba(255,255,255,0.2); }
 #logo-img {
   transition: opacity 0.3s ease;
 }
+.buy-btn {
+  background-color: var(--accent-color);
+  color: white; /* نص أبيض ليكون واضح */
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.buy-btn:hover {
+  background-color: var(--secondary-color); /* أزرق أفتح على البرتقالي */
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+.btn-accent {
+  background-color: var(--accent-color);
+  color: white;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.btn-accent:hover {
+  background-color: var(--secondary-color); /* أزرق للـ hover */
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+.btn-accent {
+  background-color: var(--accent-color);
+  color: white;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-accent:hover {
+  background-color: #e6851f; /* أغمق شوي عند hover */
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+.btn-accent-pill {
+  background-color: var(--accent-color);
+  color: white;
+  border-radius: 50px; /* نفس تأثير rounded-pill */
+  padding-left: 1rem;  /* يعادل px-3 */
+  padding-right: 1rem;
+  transition: all 0.3s ease;
+}
+
+.btn-accent-pill:hover {
+  background-color: #e6851f; /* أغمق شوي عند hover */
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+

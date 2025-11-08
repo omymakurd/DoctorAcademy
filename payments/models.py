@@ -3,7 +3,7 @@ from decimal import Decimal
 from users.models import User
 from courses.models import Course
 from lectures.models import BasicLecture, ClinicalLecture
-
+from lectures.models import Module
 class Payment(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='payments', null=True, blank=True)
@@ -21,7 +21,7 @@ class Payment(models.Model):
         default='pending'
     )
     transaction_id = models.CharField(max_length=100, blank=True, null=True)
-
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, null=True, blank=True)
     # توزيع الأرباح
     instructor_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     provider_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0)
@@ -47,6 +47,10 @@ class Payment(models.Model):
         elif self.course and self.course.provider:
             instructor_share = 0
             provider_share = getattr(getattr(self.course.provider, 'provider_profile', None), 'profit_share', 0)
+        elif self.module:
+            instructor_share = getattr(self.module.instructor.instructor_profile, 'default_profit_share', 0)
+            provider_share = getattr(getattr(self.module.instructor, 'provider_profile', None), 'profit_share', 0)
+
         else:
             instructor_share = 0
             provider_share = 0

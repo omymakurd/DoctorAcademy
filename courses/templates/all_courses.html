@@ -63,7 +63,7 @@
 
                     <div class="mt-auto">
                         <p class="fw-bold text-primary mb-2">{{ course.price }}$</p>
-                        <a href="#" class="btn btn-outline-primary w-100">View Course</a>
+                        <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-outline-primary w-100">View Course</a>
                     </div>
                 </div>
 

@@ -23,7 +23,7 @@ def add_to_cart(request, product_id):
 
     order.calculate_total()
 
-    return redirect('view_cart')
+    return redirect('store:view_cart')
 
 
 @login_required
@@ -55,11 +55,50 @@ def remove_from_cart(request, item_id):
     item.delete()
     order.calculate_total()
     return redirect('view_cart')
-@login_required
-def checkout_store(request):
-    order = Order.objects.filter(student=request.user, status='pending').first()
 
-    if not order or not order.orderitem_set.exists():
-        return redirect('store_home')
 
-    return render(request, 'checkout_store.html', {'order': order})
+
+from django.shortcuts import redirect, get_object_or_404
+from store.models import Order  # افترض أن عندك موديل Order للـ Cart
+from payments.models import Payment
+import stripe
+from django.conf import settings
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def checkout_store_direct(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+
+    # إنشاء Payment مرتبط بالـ order
+    payment = Payment.objects.create(
+        student=request.user,
+        amount=order.total_amount,
+        method='card',
+        status='pending'
+    )
+
+    # إنشاء Stripe Checkout Session
+    line_items = []
+    for item in order.orderitem_set.all():  # ✅ هذا صحيح حسب المودل الحالي
+        line_items.append({
+        'price_data': {
+            'currency': 'usd',
+            'product_data': {'name': item.product.name},
+            'unit_amount': int(item.product.final_price() * 100),
+        },
+        'quantity': item.quantity,
+    })
+
+
+    checkout_session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=line_items,
+        mode='payment',
+        success_url=request.build_absolute_uri(f'/payments/courses/success/?payment_id={payment.id}'),
+        cancel_url=request.build_absolute_uri(f'/payments/courses/cancel/?payment_id={payment.id}'),
+    )
+
+    payment.transaction_id = checkout_session.id
+    payment.save()
+
+    return redirect(checkout_session.url)

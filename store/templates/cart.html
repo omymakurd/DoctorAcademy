@@ -32,7 +32,7 @@
           </td>
 
           <td class="text-center">
-            <form action="{% url 'update_quantity' item.id %}" method="POST" class="d-inline">
+            <form action="{% url 'store:update_quantity' item.id %}" method="POST" class="d-inline">
               {% csrf_token %}
               <button name="action" value="decrease" class="btn btn-sm btn-light">-</button>
               <span class="mx-2 fw-semibold">{{ item.quantity }}</span>
@@ -45,7 +45,7 @@
           <td class="text-end fw-semibold">${{ item.subtotal }}</td>
 
           <td class="text-end">
-            <form action="{% url 'remove_from_cart' item.id %}" method="POST">
+            <form action="{% url 'store:remove_from_cart' item.id %}" method="POST">
               {% csrf_token %}
               <button class="btn btn-sm btn-outline-danger">
                 <i class="bi bi-trash"></i>
@@ -63,7 +63,10 @@
   <div class="text-end mt-4">
     <h4>Total: <span class="text-success">${{ order.total_amount }}</span></h4>
 
-<a href="{% url 'checkout_store' %}" class="btn btn-dark btn-lg mt-3">Checkout</a>
+<a href="{% url 'store:checkout_store_direct' order.id %}" class="btn btn-dark btn-lg mt-3">
+  Checkout
+</a>
+
   </div>
 
   {% else %}

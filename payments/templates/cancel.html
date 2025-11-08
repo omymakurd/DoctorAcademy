@@ -1,2 +1,31 @@
-<h2>Payment Cancelled</h2>
-<p>تم إلغاء الدفع لمبلغ {{ payment.amount }} EGP.</p>
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Payment Cancelled{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 50px auto; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+    <h1 style="color: red;">❌ Payment Cancelled</h1>
+
+    <p style="font-size: 18px; margin: 20px 0;">
+        لم يتم إتمام الدفع.
+    </p>
+
+    <p style="font-size: 16px;">
+        {% if payment.course %}
+            الدورة: <strong>{{ payment.course.title }}</strong>
+        {% elif payment.lecture_basic %}
+            المحاضرة: <strong>{{ payment.lecture_basic.title }}</strong>
+        {% elif payment.lecture_clinical %}
+            المحاضرة: <strong>{{ payment.lecture_clinical.title }}</strong>
+        {% elif payment.module %}
+            الموديول: <strong>{{ payment.module.title }}</strong>
+        {% endif %}
+        لم يتم تسجيلك فيه بعد.
+    </p>
+
+    <a href="{% url 'courses:all_courses' %}" style="display: inline-block; margin-top: 30px; padding: 10px 20px; background: #dc3545; color: #fff; text-decoration: none; border-radius: 5px;">
+        العودة للدورات
+    </a>
+</div>
+{% endblock %}

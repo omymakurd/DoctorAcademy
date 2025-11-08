@@ -84,7 +84,7 @@
         </li>
         {% else %}
           <li class="nav-item ms-2">
-            <a class="btn btn-warning text-dark fw-bold" href="{% url 'auth' %}">{% trans "Join Us" %}</a>
+<a class="btn btn-accent text-white fw-bold" href="{% url 'auth' %}">{% trans "Join Us" %}</a>
           </li>
         {% endif %}
       </ul>
@@ -123,7 +123,7 @@
           <p class="card-price"><i class="bi bi-currency-dollar"></i> {{ course.price }}</p>
           <div class="mt-auto d-flex gap-2">
             <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-outline-primary w-50">{% trans "View" %}</a>
-            <a href="{% url 'courses:checkout' course.id %}" class="btn btn-warning w-50">{% trans "Buy" %}</a>
+            <a href="{% url 'courses:checkout' course.id %}" class="btn w-50 btn-sm buy-btn">{% trans "Buy" %}</a>
 
           </div>
         </div>
@@ -168,7 +168,7 @@
             </p>
             <div class="mt-auto d-flex gap-2">
               <a href="{% url 'lectures:module_detail' module.id %}" class="btn btn-outline-primary w-50 btn-sm">{% trans "View Details" %}</a>
-              <a href="{% url 'lectures:module_checkout' module.id %}" class="btn btn-warning w-50 btn-sm">{% trans "Buy Now" %}</a>
+              <a href="{% url 'lectures:module_checkout' module.id %}" class="btn w-50 btn-sm buy-btn">{% trans "Buy Now" %}</a>
             </div>
           </div>
         </div>
@@ -204,7 +204,8 @@
             </p>
             <div class="mt-auto d-flex gap-2">
               <a href="{% url 'lectures:module_detail' module.id %}" class="btn btn-outline-primary w-50 btn-sm">{% trans "View Details" %}</a>
-              <a href="{% url 'lectures:module_checkout' module.id %}" class="btn btn-warning w-50 btn-sm">{% trans "Buy Now" %}</a>
+              <a href="{% url 'lectures:module_checkout' module.id %}" class="btn w-50 btn-sm buy-btn">{% trans "Buy Now" %}</a>
+
             </div>
           </div>
         </div>
@@ -260,7 +261,7 @@
               <!-- زر إضافة للسلة -->
               <form method="post" action="{% url 'store:add_to_cart' product.id %}" class="w-50">
                 {% csrf_token %}
-                <button class="btn btn-warning btn-sm w-100">
+                <button class="btn btn-accent btn-sm w-100">
                   <i class="bi bi-cart-plus"></i>
                 </button>
               </form>
@@ -421,10 +422,10 @@
       <!-- Newsletter -->
       <div class="col-lg-4 col-md-12">
         <h6 class="fw-semibold mb-3">{% trans "Stay Updated" %}</h6>
-        <p class="text-muted small">{% trans "Get the latest courses, medical updates, and exclusive offers straight to your inbox." %}</p>
+        <p class=" small">{% trans "Get the latest courses, medical updates, and exclusive offers straight to your inbox." %}</p>
         <form class="d-flex">
           <input type="email" class="form-control me-2 rounded-pill" placeholder="{% trans 'Enter your email' %}">
-          <button class="btn btn-warning rounded-pill px-3" type="submit">{% trans "Subscribe" %}</button>
+          <button class="btn btn-accent-pill" type="submit">{% trans "Subscribe" %}</button>
         </form>
       </div>
     </div>

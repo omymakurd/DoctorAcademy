@@ -375,7 +375,7 @@ def module_detail(request, module_id):
     user_enrolled = False
 
     if request.user.is_authenticated:
-        user_enrolled = request.user.module_enrollments.filter(module=module).exists()
+        user_enrolled = module.enrollments.filter(student=request.user).exists()
 
     context = {
         "module": module,
@@ -497,7 +497,8 @@ def add_clinical_lecture(request, module_id):
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from .models import Module, BasicLecture, ClinicalLecture, LectureReview
+from .models import Module, BasicLecture, ClinicalLecture
+from payments.models import Payment
 
 @login_required
 def module_learning_view(request, module_id):
@@ -505,14 +506,14 @@ def module_learning_view(request, module_id):
 
     # التأكد من تسجيل الطالب في الموديول
     if not module.enrollments.filter(student=request.user).exists():
-        from django.http import HttpResponseForbidden
-        return HttpResponseForbidden("You are not enrolled in this module.")
+        return redirect('lectures:module_detail', module_id=module.id)
 
-    # جلب المحاضرات بدون الاعتماد على العلاقة العكسية
+    # جلب جميع المحاضرات
     basic_lectures = list(BasicLecture.objects.filter(module=module))
     clinical_lectures = list(ClinicalLecture.objects.filter(module=module))
     all_lectures = basic_lectures + clinical_lectures
 
+    # تحديد المحاضرة الحالية
     lecture_id = request.GET.get("lecture")
     current_lecture = None
     next_lecture = None
@@ -528,6 +529,22 @@ def module_learning_view(request, module_id):
         current_lecture = all_lectures[0]
         if len(all_lectures) > 1:
             next_lecture = all_lectures[1]
+
+    # ✅ التحقق من الدفع لكل نوع محاضرة
+    if current_lecture:
+        payment_exists = Payment.objects.filter(
+            student=request.user,
+            status='completed',
+            **({'lecture_clinical': current_lecture} if isinstance(current_lecture, ClinicalLecture)
+               else {'lecture_basic': current_lecture})
+        ).exists()
+
+        if not payment_exists:
+            # تحويل الطالب إلى صفحة الدفع المناسبة
+            if isinstance(current_lecture, ClinicalLecture):
+                return redirect('payments:stripe_start_clinical', current_lecture.id)
+            else:
+                return redirect('payments:stripe_start_basic', current_lecture.id)
 
     # حساب نسبة التقدم
     completed = request.user.lecture_progress.filter(
@@ -547,7 +564,6 @@ def module_learning_view(request, module_id):
         "progress_percentage": progress_percentage,
     }
     return render(request, "module_learning.html", context)
-
 
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -676,3 +692,43 @@ def quiz_history(request, lecture_type, lecture_id):
         "attempts": attempts,
         "lecture_type": lecture_type
     })
+# في lectures/views.py (أضف الاستيرادات أعلى الملف)
+from django.shortcuts import render, redirect
+from django.http import HttpResponseForbidden
+from .utils import user_has_access_to_lecture
+from payments.models import Payment
+
+@login_required
+def lecture_learning_view(request, lecture_type, lecture_id):
+    """
+    lecture_type: 'basic' أو 'clinical'
+    هذه الصفحة تعرض المحاضرة فردياً (player, resources, quiz links)
+    إن لم يكن عند المستخدم دفع، نعيده لصفحة الدفع المناسبة.
+    """
+    if lecture_type == 'basic':
+        lecture = get_object_or_404(BasicLecture, id=lecture_id)
+    elif lecture_type == 'clinical':
+        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+    else:
+        return HttpResponseForbidden("Invalid lecture type")
+
+    # إذا المحاضرة مجانية (price == 0 أو None) نسمح بالدخول.
+    # ملاحظة: حسب موديلك، قد تحتاج تضيف حقل price في BasicLecture / ClinicalLecture
+    price = getattr(lecture, 'price', None)
+    is_free = (price is None) or (price == 0)
+
+    if not is_free:
+        # تحقق الدفع
+        if not user_has_access_to_lecture(request.user, lecture):
+            # Redirect to lecture-specific checkout route (routes موجودة عندك)
+            if lecture_type == 'basic':
+                return redirect('payments:stripe_start_basic', lecture_id=lecture.id)
+            else:
+                return redirect('payments:stripe_start_clinical', lecture_id=lecture.id)
+
+    # لو وصل هنا، إما مجانية أو مُدفع لها
+    context = {
+        'lecture': lecture,
+        'lecture_type': lecture_type,
+    }
+    return render(request, 'lecture_learning.html', context)

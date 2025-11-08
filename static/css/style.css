@@ -225,3 +225,18 @@ footer hr { border-color: rgba(255,255,255,0.2); }
 #logo-img {
   transition: opacity 0.3s ease;
 }
+.btn-accent-pill {
+  background-color: var(--accent-color);
+  color: white;
+  border-radius: 50px; /* نفس تأثير rounded-pill */
+  padding-left: 1rem;  /* يعادل px-3 */
+  padding-right: 1rem;
+  transition: all 0.3s ease;
+}
+
+.btn-accent-pill:hover {
+  background-color: #e6851f; /* أغمق شوي عند hover */
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
