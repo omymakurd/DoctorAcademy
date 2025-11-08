@@ -222,3 +222,6 @@ footer hr { border-color: rgba(255,255,255,0.2); }
     text-align: center;
   }
 }
+#logo-img {
+  transition: opacity 0.3s ease;
+}

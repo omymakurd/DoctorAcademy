@@ -236,3 +236,6 @@ footer hr { border-color: rgba(255,255,255,0.2); }
   .hero-content { padding: 20px 25px; }
   .card img { height: 150px; }
 }
+#logo-img {
+  transition: opacity 0.3s ease;
+}

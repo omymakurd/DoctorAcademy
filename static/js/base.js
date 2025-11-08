@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function() {
       logo.src = "/static/images/logo.png"; // الصورة الجديدة عند السكروول
     } else {
       navbar.classList.remove("scrolled");
-      logo.src = "/static/images/logo2.png"; // الصورة الأصلية
+      logo.src = "/static/images/logo.png"; // الصورة الأصلية
     }
   }
 
