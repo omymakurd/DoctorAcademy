@@ -37,9 +37,9 @@
       <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">{% trans "Home" %}</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'courses:all_courses' %}">{% trans "Courses" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'module_list' %}">{% trans "Lectures" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'lectures:module_list' %}">{% trans "Lectures" %}</a></li>
         <li class="nav-item">
-  <a class="nav-link" href="{% url 'store_home' %}">Store</a>
+  <a class="nav-link" href="{% url 'store:store_home' %}">Store</a>
 </li>
 
 
@@ -69,9 +69,9 @@
             {% if user.role == 'admin' %}
               <li><a class="dropdown-item" href="/admin/">Admin Dashboard</a></li>
             {% elif user.role == 'instructor' %}
-              <li><a class="dropdown-item" href="{% url 'instructor_dashboard' %}">Instructor Dashboard</a></li>
+              <li><a class="dropdown-item" href="{% url 'lectures:instructor_dashboard' %}">Instructor Dashboard</a></li>
             {% elif user.role == 'student' %}
-              <li><a class="dropdown-item" href="#">Student Dashboard</a></li>
+              <li><a class="dropdown-item" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
             {% elif user.role == 'course_provider' %}
               <li><a class="dropdown-item" href="{% url 'courses:course_provider_dashboard' %}">Provider Dashboard</a></li>
             {% endif %}
@@ -121,7 +121,8 @@
           <p class="card-price"><i class="bi bi-currency-dollar"></i> {{ course.price }}</p>
           <div class="mt-auto d-flex gap-2">
             <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-outline-primary w-50">{% trans "View" %}</a>
-            <a href="#" class="btn btn-warning w-50">Buy</a>
+            <a href="{% url 'courses:checkout' course.id %}" class="btn btn-warning w-50">{% trans "Buy" %}</a>
+
           </div>
         </div>
       </div>
@@ -136,6 +137,7 @@
 
 <!-- Trending Lectures -->
 <!-- ================= Trending Lectures ================= -->
+<!-- Trending Lectures -->
 <!-- Trending Lectures -->
 <section class="trending-lectures py-5">
   <div class="container">
@@ -162,27 +164,17 @@
                 {{ module.description|truncatewords:12 }}
               {% endif %}
             </p>
-            <div class="mt-auto">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-warning fw-bold">${{ module.price }}</span>
-                <small class="text-muted">
-                  {% trans "Lectures:" %} {{ module.basic_lectures.count }}
-                </small>
-              </div>
-              <div class="d-grid gap-2">
-                <a href="{% url 'module_detail' module.id %}" class="btn btn-outline-primary btn-sm">{% trans "View Details" %}</a>
-                <a href="#" class="btn btn-warning btn-sm">{% trans "Enroll Now" %}</a>
-              </div>
+            <div class="mt-auto d-flex gap-2">
+              <a href="{% url 'lectures:module_detail' module.id %}" class="btn btn-outline-primary w-50 btn-sm">{% trans "View Details" %}</a>
+              <a href="{% url 'lectures:module_checkout' module.id %}" class="btn btn-warning w-50 btn-sm">{% trans "Buy Now" %}</a>
             </div>
           </div>
         </div>
       </div>
       {% empty %}
-      <div class="col-12">
-        <div class="text-center py-4">
-          <i class="bi bi-book fs-1 text-muted"></i>
-          <p class="text-muted mt-2">{% trans "No basic science modules available at the moment." %}</p>
-        </div>
+      <div class="col-12 text-center py-4">
+        <i class="bi bi-book fs-1 text-muted"></i>
+        <p class="text-muted mt-2">{% trans "No basic science modules available at the moment." %}</p>
       </div>
       {% endfor %}
     </div>
@@ -208,38 +200,29 @@
                 {{ module.description|truncatewords:12 }}
               {% endif %}
             </p>
-            <div class="mt-auto">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-warning fw-bold">${{ module.price }}</span>
-                <small class="text-muted">
-                  {% trans "Lectures:" %} {{ module.clinical_lectures.count }}
-                </small>
-              </div>
-              <div class="d-grid gap-2">
-                <a href="#" class="btn btn-outline-primary btn-sm">{% trans "View Details" %}</a>
-                <a href="#" class="btn btn-warning btn-sm">{% trans "Enroll Now" %}</a>
-              </div>
+            <div class="mt-auto d-flex gap-2">
+              <a href="{% url 'lectures:module_detail' module.id %}" class="btn btn-outline-primary w-50 btn-sm">{% trans "View Details" %}</a>
+              <a href="{% url 'lectures:module_checkout' module.id %}" class="btn btn-warning w-50 btn-sm">{% trans "Buy Now" %}</a>
             </div>
           </div>
         </div>
       </div>
       {% empty %}
-      <div class="col-12">
-        <div class="text-center py-4">
-          <i class="bi bi-heart-pulse fs-1 text-muted"></i>
-          <p class="text-muted mt-2">{% trans "No clinical science modules available at the moment." %}</p>
-        </div>
+      <div class="col-12 text-center py-4">
+        <i class="bi bi-heart-pulse fs-1 text-muted"></i>
+        <p class="text-muted mt-2">{% trans "No clinical science modules available at the moment." %}</p>
       </div>
       {% endfor %}
     </div>
   </div>
 </section>
+
 <!-- Store Highlights -->
 <section id="store" class="py-5 bg-light">
   <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="fw-bold text-primary">{% trans "Store Highlights" %}</h2>
-      <a href="{% url 'store_home' %}" class="btn btn-outline-primary btn-sm">{% trans "View All" %}</a>
+      <a href="{% url 'store:store_home' %}" class="btn btn-outline-primary btn-sm">{% trans "View All" %}</a>
     </div>
 
     <div class="row g-4">
@@ -273,7 +256,7 @@
               </button>
 
               <!-- زر إضافة للسلة -->
-              <form method="post" action="{% url 'add_to_cart' product.id %}" class="w-50">
+              <form method="post" action="{% url 'store:add_to_cart' product.id %}" class="w-50">
                 {% csrf_token %}
                 <button class="btn btn-warning btn-sm w-100">
                   <i class="bi bi-cart-plus"></i>
@@ -314,7 +297,7 @@
                   <h4 class="text-warning fw-bold">${{ product.price }}</h4>
                 {% endif %}
 
-                <form method="post" action="{% url 'add_to_cart' product.id %}">
+                <form method="post" action="{% url 'store:add_to_cart' product.id %}">
                   {% csrf_token %}
                   <label class="mt-3 fw-semibold">{% trans "Quantity" %}</label>
                   <input type="number" name="quantity" class="form-control w-50" min="1" value="1">
@@ -418,9 +401,9 @@
         <ul class="list-unstyled">
           <li><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'courses:all_courses' %}">{% trans "Courses" %}</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'module_list' %}">{% trans "Lectures" %}</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'lectures:module_list' %}">{% trans "Lectures" %}</a></li>
         <li class="nav-item">
-  <a class="nav-link" href="{% url 'store_home' %}">Store</a>
+  <a class="nav-link" href="{% url 'store:store_home' %}">Store</a>
 </li>
         </ul>
       </div>

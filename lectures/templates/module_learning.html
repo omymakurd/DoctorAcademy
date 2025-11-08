@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Learning: {{ module.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+
+        <!-- ====== Sidebar: Lectures List ====== -->
+        <div class="col-lg-3 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white fw-bold">
+                    {{ module.title }}
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for lecture in basic_lectures %}
+                        <a href="?lecture={{ lecture.id }}" 
+                           class="list-group-item list-group-item-action {% if lecture.id|stringformat:'s' == request.GET.lecture %}active{% endif %}">
+                            🎥 {{ lecture.title }}
+                        </a>
+                    {% endfor %}
+                    {% for lecture in clinical_lectures %}
+                        <a href="?lecture={{ lecture.id }}" 
+                           class="list-group-item list-group-item-action {% if lecture.id|stringformat:'s' == request.GET.lecture %}active{% endif %}">
+                            🧠 {{ lecture.title }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="card shadow-sm mt-3">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-2">Progress</h6>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-success" 
+                             role="progressbar" 
+                             style="width: {{ progress_percentage }}%;" 
+                             aria-valuenow="{{ progress_percentage }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ progress_percentage|floatformat:1 }}% completed</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== Main Content Area ====== -->
+        <div class="col-lg-9">
+
+            {% if current_lecture %}
+            <!-- ====== Lecture Header ====== -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h4 class="fw-bold">{{ current_lecture.title }}</h4>
+                    <p class="text-muted">{{ current_lecture.description }}</p>
+
+                    <!-- ====== Rating Overview ====== -->
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-2">
+                            <strong>{{ avg_rating|floatformat:1 }}</strong> / 5
+                        </div>
+                        <div class="text-warning">
+                            {% for i in "12345"|slice:":avg_rating"|make_list %}⭐{% endfor %}
+                        </div>
+                        <div class="ms-2 text-muted">
+                            ({{ total_reviews }} Reviews)
+                        </div>
+                    </div>
+                    <hr>
+
+                    <!-- ====== Lecture Content ====== -->
+                    {% if current_lecture.lecture_type == 'zoom' %}
+                        <div class="alert alert-info">
+                            <strong>Live Zoom Session</strong><br>
+                            <a href="{{ current_lecture.zoom_join_url }}" target="_blank" class="btn btn-primary mt-2">Join Live Now</a>
+                        </div>
+                    {% elif current_lecture.video_file %}
+                        <video class="w-100 rounded shadow" controls>
+                            <source src="{{ current_lecture.video_file.url }}" type="video/mp4">
+                            Your browser does not support video playback.
+                        </video>
+                    {% elif current_lecture.video_url %}
+                        <div class="ratio ratio-16x9">
+                            <iframe src="{{ current_lecture.video_url }}" frameborder="0" allowfullscreen></iframe>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ====== Quiz Section ====== -->
+            {% if current_lecture.quizzes.exists %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="fw-bold">Quiz</h5>
+                    {% for quiz in current_lecture.quizzes.all %}
+                        <p>{{ quiz.title }}</p>
+                        <a href="{% url 'lectures:take_quiz' quiz.id %}" class="btn btn-outline-primary btn-sm">
+                            Start Quiz
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ====== Reviews Section ====== -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">Student Reviews</h5>
+
+                    {% for review in reviews %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <strong>{{ review.student.username }}</strong> 
+                            <span class="text-warning">
+                                {% for i in "12345"|slice:":review.rating"|make_list %}⭐{% endfor %}
+                            </span>
+                            <p class="mb-1">{{ review.comment }}</p>
+                            <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No reviews yet.</p>
+                    {% endfor %}
+
+                    <!-- ====== Add Review Form ====== -->
+                    <form method="POST" action="{% url 'lectures:add_review' current_lecture.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="lecture_type" value="{{ current_lecture.lecture_type }}">
+
+                        <div class="d-flex align-items-center mb-2">
+                            {% for i in "12345" %}
+                                <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}">
+                                <label for="star{{ i }}" class="me-2">⭐</label>
+                            {% endfor %}
+                        </div>
+                        <textarea name="comment" class="form-control mb-2" rows="2" placeholder="Write a comment..."></textarea>
+                        <button type="submit" class="btn btn-success btn-sm">Submit Review</button>
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- ====== Next Lecture Button ====== -->
+            {% if next_lecture %}
+            <div class="text-end mb-5">
+                <a href="?lecture={{ next_lecture.id }}" class="btn btn-primary btn-lg">
+                    Next Lecture →
+                </a>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                👈 Select a lecture from the list to start learning.
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

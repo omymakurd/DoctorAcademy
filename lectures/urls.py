@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-
+app_name = 'lectures'
 urlpatterns = [
     path('dashboard/', views.instructor_dashboard, name='instructor_dashboard'),
     path('add/basic/', views.add_basic_lecture, name='add_basic_lecture'),
@@ -16,8 +16,17 @@ urlpatterns = [
 
     # صفحة تفاصيل موديول واحد
     path("modules/<int:module_id>/", views.module_detail, name="module_detail"),
-
-
-
+    path('module/<int:module_id>/checkout/', views.module_checkout, name='module_checkout'),
+    path("instructor/my-lectures/", views.my_lectures, name="my_lectures"),
+    path("module/<int:module_id>/edit/", views.edit_module, name="edit_module"),
+    path('module/<int:module_id>/add/basic/', views.add_basic_lecture, name='add_basic_lecture'),
+    path('lectures/add/clinical/', views.add_clinical_lecture, name='add_clinical_lecture'),
+    path('module/<int:module_id>/learn/', views.module_learning_view, name='module_learning'),
+    path('lecture/<int:lecture_id>/review/', views.add_review, name='add_review'),
+    path('quiz/<int:quiz_id>/take/', views.take_quiz, name='take_quiz'),
+    path('quiz/<int:quiz_id>/<int:attempt_id>/autosave/', views.quiz_autosave, name='quiz-autosave'),
+    path('quiz/<int:quiz_id>/submit/', views.quiz_submit, name='quiz-submit'),
+    path('quiz/<int:quiz_id>/<int:attempt_id>/result/', views.quiz_result, name='quiz-result'),
+    path('lecture/<str:lecture_type>/<int:lecture_id>/quiz-history/',views.quiz_history,name='quiz_lectuer_history'),
 
 ]

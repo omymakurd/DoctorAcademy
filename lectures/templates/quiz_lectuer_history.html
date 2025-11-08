@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <h3>{{ lecture.title }} — Quiz Attempts</h3>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Attempt</th>
+        <th>Score</th>
+        <th>Status</th>
+        <th>Started</th>
+        <th>Finished</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for attempt in attempts %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ attempt.attempt_number }}</td>
+          <td>{{ attempt.score }}%</td>
+          <td>{% if attempt.is_submitted %}Submitted{% else %}Open{% endif %}</td>
+          <td>{{ attempt.started_at }}</td>
+          <td>{{ attempt.finished_at|default:"—" }}</td>
+          <td>
+            <a href="{% url 'lectures:quiz-result' attempt.quiz.id attempt.id %}" class="btn btn-sm btn-outline-primary">
+              View
+            </a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="7" class="text-center">No attempts yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

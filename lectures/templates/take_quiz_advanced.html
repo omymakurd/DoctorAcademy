@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h4 class="mb-0">{{ quiz.title }}</h4>
+              <small class="text-muted">Attempt #{{ attempt.attempt_number }}</small>
+            </div>
+            <div class="text-end">
+              {% if time_limit_seconds %}
+                <div class="fw-bold">Time left</div>
+                <div id="time-left" class="h5 mb-0"></div>
+              {% else %}
+                <div class="text-muted">No time limit</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="mb-3">
+            <div class="progress" style="height:14px;">
+              <div id="quiz-progress" class="progress-bar" role="progressbar" style="width:0%">0%</div>
+            </div>
+          </div>
+
+          <form id="quiz-form">
+            <input type="hidden" name="attempt_id" value="{{ attempt.id }}">
+            <input type="hidden" id="current-index" value="0">
+
+            <div id="questions-container">
+              {% for question in questions %}
+                <div class="question-item" data-qindex="{{ forloop.counter0 }}" data-qid="{{ question.id }}" style="{% if not forloop.first %}display:none;{% endif %}">
+                  <h5>Q{{ forloop.counter }}. {{ question.text }}</h5>
+                  <div class="list-group mt-2">
+                    {% for choice in question.choices.all %}
+                      <label class="list-group-item list-group-item-action">
+                        <input class="form-check-input me-2" type="radio" name="question_{{ question.id }}" value="{{ choice.id }}">
+                        {{ choice.text }}
+                      </label>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+              <div>
+                <button type="button" id="prev-btn" class="btn btn-outline-secondary" disabled>← Previous</button>
+                <button type="button" id="next-btn" class="btn btn-outline-secondary">Next →</button>
+              </div>
+              <div>
+                <button type="button" id="save-btn" class="btn btn-secondary me-2">Save</button>
+                <button type="button" id="submit-btn" class="btn btn-primary">Submit Quiz</button>
+              </div>
+            </div>
+            <div class="mt-3 text-muted">
+              <small>Auto-save every 20 seconds. Your answers are saved but will only be graded after submission.</small>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const totalQuestions = {{ questions|length }};
+  const qs = Array.from(document.querySelectorAll('.question-item'));
+  let idx = 0;
+
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const saveBtn = document.getElementById('save-btn');
+  const submitBtn = document.getElementById('submit-btn');
+  const progressBar = document.getElementById('quiz-progress');
+
+  function showIndex(i){
+    qs.forEach((el, j) => el.style.display = j === i ? '' : 'none');
+    idx = i;
+    document.getElementById('current-index').value = idx;
+    prevBtn.disabled = (idx === 0);
+    nextBtn.disabled = (idx === qs.length - 1);
+    updateProgress();
+  }
+
+  function updateProgress(){
+    const answered = qs.filter(q => !!document.querySelector(`input[name="question_${q.dataset.qid}"]:checked`)).length;
+    const pct = Math.round((answered / totalQuestions) * 100);
+    progressBar.style.width = pct + '%';
+    progressBar.innerText = pct + '%';
+  }
+
+  prevBtn.addEventListener('click', () => { if(idx>0) showIndex(idx-1); });
+  nextBtn.addEventListener('click', () => { if(idx<qs.length-1) showIndex(idx+1); });
+
+  async function autosave(){
+    const fd = new FormData(document.getElementById('quiz-form'));
+    const url = `{% url 'lectures:quiz-autosave' quiz.id attempt.id %}`;
+    try{ await fetch(url, {method:'POST', headers:{'X-CSRFToken':getCookie('csrftoken')}, body:fd}); updateProgress(); }
+    catch(e){ console.warn('Autosave failed', e); }
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    await autosave();
+    saveBtn.innerText = 'Saved ✓';
+    setTimeout(()=> saveBtn.innerText='Save',1500);
+  });
+
+  submitBtn.addEventListener('click', async function(){
+    if(!confirm('Are you sure to submit?')) return;
+    const fd = new FormData(document.getElementById('quiz-form'));
+    submitBtn.disabled=true; submitBtn.innerText='Submitting...';
+    try{
+      const res = await fetch(`{% url 'lectures:quiz-submit' quiz.id %}`, {method:'POST', headers:{'X-CSRFToken':getCookie('csrftoken')}, body:fd});
+      const data = await res.json();
+      if(data.status==='ok') window.location.href=`{% url 'lectures:quiz-result' quiz.id 0 %}`.replace('/0/',`/${data.attempt_id}/`);
+      else{ alert('Submission failed'); submitBtn.disabled=false; submitBtn.innerText='Submit Quiz'; }
+    }catch(err){ console.error(err); alert('Connection error'); submitBtn.disabled=false; submitBtn.innerText='Submit Quiz'; }
+  });
+
+  setInterval(autosave, 20000);
+
+  function getCookie(name){let cookieValue=null;if(document.cookie && document.cookie!==''){const cookies=document.cookie.split(';');for(let i=0;i<cookies.length;i++){const cookie=cookies[i].trim();if(cookie.substring(0,name.length+1)===(name+'=')){cookieValue=decodeURIComponent(cookie.substring(name.length+1));break;}}}return cookieValue;}
+
+  {% if time_limit_seconds %}
+    let remaining={{ time_limit_seconds }};
+    const timeEl=document.getElementById('time-left');
+    function formatTime(s){const m=Math.floor(s/60); const sec=s%60; return `${m}:${sec.toString().padStart(2,'0')}`;}
+    timeEl.innerText=formatTime(remaining);
+    const countdown=setInterval(async function(){remaining--; timeEl.innerText=formatTime(remaining); if(remaining<=0){clearInterval(countdown); await autosave(); submitBtn.click();}},1000);
+  {% endif %}
+
+  updateProgress();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Checkout - {{ module.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <div class="row mb-4 text-center">
+        <div class="col-md-8 mx-auto">
+            <h2 class="fw-bold">Checkout</h2>
+            <p class="text-muted">You are enrolling in <strong>{{ module.title }}</strong></p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        {% if module.thumbnail %}
+                            <img src="{{ module.thumbnail.url }}" class="img-fluid rounded-start" alt="{{ module.title }}">
+                        {% else %}
+                            <img src="{% static 'images/default-module.jpg' %}" class="img-fluid rounded-start" alt="No Image">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ module.title }}</h5>
+                            <p class="card-text">{{ module.description }}</p>
+                            <p class="fw-bold text-primary">Price: ${{ module.price }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrollment / Start Learning -->
+    <div class="row">
+        <div class="col-md-6 mx-auto text-center">
+            {% if user.is_authenticated %}
+                {% if user_enrolled %}
+                    <p class="text-success fw-bold">You are already enrolled!</p>
+                    <a href="{% url 'lectures:module_detail' module.id %}" class="btn btn-success btn-lg w-100">Start Learning</a>
+                {% else %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning btn-lg w-100">Enroll & Pay Now</button>
+                    </form>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg w-100">Login to Enroll</a>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

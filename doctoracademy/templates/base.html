@@ -42,7 +42,7 @@
       <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">{% trans "Home" %}</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'courses:all_courses' %}">{% trans "Courses" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'module_list' %}">{% trans "Lectures" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'lectures:module_list' %}">{% trans "Lectures" %}</a></li>
         <li class="nav-item"><a class="nav-link" href="#store">{% trans "Store" %}</a></li>
 
         <!-- Language Switcher -->
@@ -71,7 +71,7 @@
             {% if user.role == 'admin' %}
               <li><a class="dropdown-item" href="/admin/">Admin Dashboard</a></li>
             {% elif user.role == 'instructor' %}
-              <li><a class="dropdown-item" href="{% url 'instructor_dashboard' %}">Instructor Dashboard</a></li>
+              <li><a class="dropdown-item" href="{% url 'lectures:instructor_dashboard' %}">Instructor Dashboard</a></li>
             {% elif user.role == 'student' %}
               <li><a class="dropdown-item" href="#">Student Dashboard</a></li>
             {% elif user.role == 'course_provider' %}
@@ -123,9 +123,9 @@
         <ul class="list-unstyled">
           <li><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'courses:all_courses' %}">{% trans "Courses" %}</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'module_list' %}">{% trans "Lectures" %}</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'lectures:module_list' %}">{% trans "Lectures" %}</a></li>
         <li class="nav-item">
-  <a class="nav-link" href="{% url 'store_home' %}">Store</a>
+  <a class="nav-link" href="{% url 'store:store_home' %}">Store</a>
 </li>
         </ul>
       </div>

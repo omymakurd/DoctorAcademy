@@ -26,23 +26,18 @@ class ModuleForm(forms.ModelForm):
 
     class Meta:
         model = Module
-        fields = ['basic_system', 'clinical_system', 'thumbnail', 'description', 'price', 'is_featured']
+        fields = [
+            'title',              # ✅ أضف هذا
+            'basic_system',
+            'clinical_system',
+            'thumbnail',
+            'description',
+            'price',
+            'is_featured'
+        ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
         }
-
-    def clean(self):
-        cleaned_data = super().clean()
-        basic = cleaned_data.get('basic_system')
-        clinical = cleaned_data.get('clinical_system')
-
-        # التحقق من اختيار نظام واحد فقط
-        if not basic and not clinical:
-            raise forms.ValidationError("You must select either a Basic System or a Clinical System.")
-        if basic and clinical:
-            raise forms.ValidationError("You can select only one system type: Basic or Clinical.")
-
-        return cleaned_data
 
 
 # =======================
@@ -113,9 +108,7 @@ class BasicLectureForm(forms.ModelForm):
                 )
 
         # إخفاء حقول الزووم من الواجهة (تبقى موجودة للبرمجة فقط)
-        for f in _ZOOM_FIELDS:
-            self.fields[f].widget = forms.HiddenInput()
-
+  
 
 # =======================
 # Clinical Lecture Form
@@ -152,6 +145,4 @@ class ClinicalLectureForm(forms.ModelForm):
                 clinical_system__isnull=False, instructor=user
             )
 
-        # إخفاء حقول الزووم من الواجهة
-        for f in _ZOOM_FIELDS:
-            self.fields[f].widget = forms.HiddenInput()
+        

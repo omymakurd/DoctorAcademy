@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <!-- Summary Card -->
+      <div class="card shadow-sm text-center border-0">
+        <div class="card-body">
+          <h3 class="fw-bold mb-3">{{ attempt.quiz.title }}</h3>
+          <h1 class="display-4 mb-3 text-primary">{{ attempt.score }}%</h1>
+
+          <p class="mb-3">
+            {% if attempt.score >= attempt.quiz.pass_percentage %}
+              <span class="badge bg-success px-3 py-2">✅ Passed</span>
+            {% else %}
+              <span class="badge bg-danger px-3 py-2">❌ Failed</span>
+            {% endif %}
+            &nbsp;—&nbsp;
+            Duration: {{ attempt.duration_seconds|default:"N/A" }}s
+          </p>
+
+          <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+            <!-- Try Again -->
+            <a href="{% url 'lectures:take_quiz' attempt.quiz.id %}" class="btn btn-warning">
+              🔁 Try Again
+            </a>
+
+            <!-- Go to Next Lecture (if exists and safe) -->
+            {% if next_unit and next_unit.module %}
+              <a href="{% url 'lectures:module_learning' next_unit.module.id %}?lecture={{ next_unit.id }}" class="btn btn-success">
+                👉 Next Lecture
+              </a>
+            {% elif attempt.quiz.lecture and attempt.quiz.lecture.module %}
+              <!-- Back to current lecture's module -->
+              <a href="{% url 'lectures:module_learning' attempt.quiz.lecture.module.id %}?lecture={{ attempt.quiz.lecture.id }}" class="btn btn-outline-secondary">
+                🔚 Back to Lecture
+              </a>
+            {% else %}
+              <!-- Fallback: back to modules list -->
+              <a href="{% url 'lectures:module_list' %}" class="btn btn-outline-secondary">
+                🔚 Back to Modules
+              </a>
+            {% endif %}
+
+            <!-- View Attempts -->
+           <!-- View Attempts -->
+{% if attempt.quiz.basic_lecture %}
+  <a href="{% url 'lectures:quiz_lectuer_history' 'basic' attempt.quiz.basic_lecture.id %}" class="btn btn-outline-primary">
+    📜 View Attempts
+  </a>
+{% elif attempt.quiz.clinical_lecture %}
+  <a href="{% url 'lectures:quiz_lectuer_history' 'clinical' attempt.quiz.clinical_lecture.id %}" class="btn btn-outline-primary">
+    📜 View Attempts
+  </a>
+{% endif %}
+
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Questions -->
+      <div class="mt-5">
+        {% for detail in details %}
+          <div class="card mb-3 shadow-sm border-0">
+            <div class="card-body">
+              <div class="d-flex justify-content-between mb-2">
+                <div>
+                  <strong>{{ forloop.counter }}.</strong> {{ detail.question.text }}
+                </div>
+                <div>
+                  {% if detail.is_correct %}
+                    <span class="badge bg-success">Correct</span>
+                  {% else %}
+                    <span class="badge bg-danger">Wrong</span>
+                  {% endif %}
+                </div>
+              </div>
+              <hr>
+              <p><strong>Your answer:</strong>
+                {% if detail.selected_choice %}
+                  {{ detail.selected_choice.text }}
+                {% else %}
+                  <em>Not answered</em>
+                {% endif %}
+              </p>
+              <p><strong>Correct answer:</strong> {{ detail.question.get_correct_choice.text }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

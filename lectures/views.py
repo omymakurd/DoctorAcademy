@@ -254,13 +254,19 @@ def add_basic_lecture(request):
 def module_wizard(request):
     if request.user.role != "instructor":
         return redirect('home')
+
     module_form = ModuleForm()
     lecture_form = BasicLectureForm(user=request.user)
+
+    # 🔹 أضف هذا السطر
+    modules = Module.objects.filter(instructor=request.user).order_by('-created_at')
+
     return render(request, 'add_module_wizerd.html', {
         'module_form': module_form,
         'lecture_form': lecture_form,
-        
+        'modules': modules,  # ✅ تمرير القائمة
     })
+
 
 @login_required
 def add_clinical_lecture(request):
@@ -361,13 +367,312 @@ def module_list(request):
     })
 
 
+from django.shortcuts import render, get_object_or_404
+from .models import Module
+
 def module_detail(request, module_id):
     module = get_object_or_404(Module, id=module_id)
+    user_enrolled = False
 
-    units = list(module.basiclectures.all()) + list(module.clinicallectures.all())
-    units = sorted(units, key=lambda x: x.order)
+    if request.user.is_authenticated:
+        user_enrolled = request.user.module_enrollments.filter(module=module).exists()
 
-    return render(request, "module_detail.html", {
+    context = {
         "module": module,
-        "units": units,
+        "user_enrolled": user_enrolled
+    }
+    return render(request, "module_detail.html", context)
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Module, ModuleEnrollment, PaymentTransaction
+
+@login_required
+def module_checkout(request, module_id):
+    module = get_object_or_404(Module, id=module_id)
+
+    # هل الطالب مسجّل مسبقاً؟
+    user_enrolled = ModuleEnrollment.objects.filter(
+        student=request.user,
+        module=module
+    ).exists()
+
+    if request.method == "POST" and not user_enrolled:
+        # تسجيل الطالب في الموديول
+        ModuleEnrollment.objects.create(
+            student=request.user,
+            module=module,
+            purchased_price=module.price
+        )
+
+        # سجل دفع (اختياري الآن)
+        PaymentTransaction.objects.create(
+            user=request.user,
+            module=module,
+            amount=module.price,
+            status="success"
+        )
+
+        messages.success(request, "Payment Completed ✅ You are now enrolled.")
+        return redirect('lectures:module_detail', module_id=module.id)
+
+
+    return render(request, 'module_checkout.html', {
+        'module': module,
+        'user_enrolled': user_enrolled
+    })
+@login_required
+def my_lectures(request):
+    modules = Module.objects.filter(instructor=request.user).order_by('-created_at')
+    return render(request, "my_lectures.html", {"modules": modules})
+
+from .forms import ModuleForm
+
+@login_required
+def edit_module(request, module_id):
+    module = get_object_or_404(Module, id=module_id, instructor=request.user)
+
+    if request.method == "POST":
+        form = ModuleForm(request.POST, request.FILES, instance=module)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Module updated successfully ✅")
+            return redirect('lectures:my_lectures')
+    else:
+        form = ModuleForm(instance=module)
+
+    return render(request, "edit_module.html", {"form": form, "module": module})
+
+@login_required
+def delete_module(request, module_id):
+    module = get_object_or_404(Module, id=module_id, instructor=request.user)
+    module.delete()
+    messages.success(request, "Module Deleted ✅")
+    return redirect('lectures:my_lectures')
+@login_required
+def add_basic_lecture(request, module_id):
+    module = get_object_or_404(Module, id=module_id)
+
+    if request.method == 'POST':
+        form = BasicLectureForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            lecture = form.save(commit=False)
+            lecture.instructor = request.user
+            lecture.module = module     # ✅ ربطها بالموديول
+            lecture.save()
+            return redirect('lectures:module_detail', module_id=module.id)
+    else:
+        form = BasicLectureForm(user=request.user)
+
+    return render(request, 'add_basic_lecture.html', {'form': form, "module": module})
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import Module, ClinicalLecture
+
+@login_required
+def add_clinical_lecture(request, module_id):
+    module = get_object_or_404(Module, id=module_id)
+
+    if request.method == "POST":
+        title = request.POST.get("title")
+        description = request.POST.get("description")
+        video_url = request.POST.get("video_url")
+
+        if not title or not video_url:
+            messages.error(request, "Title and Video URL are required.")
+            return redirect("add_clinical_lecture", module_id=module.id)
+
+        lecture = ClinicalLecture.objects.create(
+            module=module,
+            title=title,
+            description=description,
+            video_url=video_url
+        )
+
+        messages.success(request, "Clinical Lecture added successfully.")
+        return redirect("module_details", module_id=module.id)
+
+    return render(request, "lectures/add_clinical_lecture.html", {"module": module})
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from .models import Module, BasicLecture, ClinicalLecture, LectureReview
+
+@login_required
+def module_learning_view(request, module_id):
+    module = get_object_or_404(Module, id=module_id)
+
+    # التأكد من تسجيل الطالب في الموديول
+    if not module.enrollments.filter(student=request.user).exists():
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("You are not enrolled in this module.")
+
+    # جلب المحاضرات بدون الاعتماد على العلاقة العكسية
+    basic_lectures = list(BasicLecture.objects.filter(module=module))
+    clinical_lectures = list(ClinicalLecture.objects.filter(module=module))
+    all_lectures = basic_lectures + clinical_lectures
+
+    lecture_id = request.GET.get("lecture")
+    current_lecture = None
+    next_lecture = None
+
+    if lecture_id:
+        for idx, lec in enumerate(all_lectures):
+            if str(lec.id) == lecture_id:
+                current_lecture = lec
+                if idx + 1 < len(all_lectures):
+                    next_lecture = all_lectures[idx + 1]
+                break
+    elif all_lectures:
+        current_lecture = all_lectures[0]
+        if len(all_lectures) > 1:
+            next_lecture = all_lectures[1]
+
+    # حساب نسبة التقدم
+    completed = request.user.lecture_progress.filter(
+        Q(basic_lecture__in=basic_lectures) |
+        Q(clinical_lecture__in=clinical_lectures),
+        status="completed"
+    ).count()
+    total_lectures = len(all_lectures)
+    progress_percentage = (completed / total_lectures * 100) if total_lectures else 0
+
+    context = {
+        "module": module,
+        "basic_lectures": basic_lectures,
+        "clinical_lectures": clinical_lectures,
+        "current_lecture": current_lecture,
+        "next_lecture": next_lecture,
+        "progress_percentage": progress_percentage,
+    }
+    return render(request, "module_learning.html", context)
+
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from .models import BasicLecture, ClinicalLecture, LectureReview
+
+@login_required
+def add_review(request, lecture_id):
+    if request.method != "POST":
+        return redirect("lectures:module_list")  # أو أي صفحة مناسبة
+
+    lecture_type = request.POST.get("lecture_type")
+    
+    if lecture_type == "basic":
+        lecture = get_object_or_404(BasicLecture, id=lecture_id)
+    elif lecture_type == "clinical":
+        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+    else:
+        # إذا نوع المحاضرة غير صحيح، نرجع المستخدم للصفحة العامة
+        return redirect("lectures:module_list")  
+
+    rating = request.POST.get("rating")
+    comment = request.POST.get("comment", "")
+
+    if lecture_type == "basic":
+        LectureReview.objects.create(
+            student=request.user,
+            basic_lecture=lecture,
+            rating=rating,
+            comment=comment
+        )
+    else:
+        LectureReview.objects.create(
+            student=request.user,
+            clinical_lecture=lecture,
+            rating=rating,
+            comment=comment
+        )
+
+    # بعد الإضافة نرجع المستخدم للصفحة الصحيحة
+    return redirect(f"/lectures/module/{lecture.module.id}/learn/?lecture={lecture.id}")
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from .models import Quiz, Question, Choice, QuizAttempt, QuizAnswer
+@login_required
+def take_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    
+    # أنشئ Attempt جديد أو استرجع الحالي
+    attempt, created = QuizAttempt.objects.get_or_create(
+        student=request.user, quiz=quiz, defaults={'attempt_number': quiz.attempts.count() + 1}
+    )
+    
+    questions = quiz.questions.all()
+    
+    # مثال وقت محدود 10 دقائق (600 ثواني)
+    time_limit_seconds = quiz.time_limit_seconds if hasattr(quiz, 'time_limit_seconds') else None
+
+    context = {
+        "quiz": quiz,
+        "questions": questions,
+        "attempt": attempt,
+        "time_limit_seconds": time_limit_seconds
+    }
+    return render(request, "take_quiz_advanced.html", context)
+
+@login_required
+def quiz_autosave(request, quiz_id, attempt_id):
+    if request.method == "POST":
+        attempt = get_object_or_404(QuizAttempt, id=attempt_id, student=request.user)
+        for key, value in request.POST.items():
+            if key.startswith("question_"):
+                qid = int(key.replace("question_", ""))
+                question = get_object_or_404(Question, id=qid)
+                choice = get_object_or_404(question.choices, id=int(value))
+                ans, _ = QuizAnswer.objects.update_or_create(
+                    attempt=attempt, question=question,
+                    defaults={'selected_choice': choice}
+                )
+        return JsonResponse({"status": "ok"})
+    return JsonResponse({"status": "fail"}, status=400)
+
+@login_required
+def quiz_submit(request, quiz_id):
+    if request.method == "POST":
+        quiz = get_object_or_404(Quiz, id=quiz_id)
+        attempt = get_object_or_404(QuizAttempt, quiz=quiz, student=request.user)
+        # يمكنك هنا حساب النقاط
+        score = 0
+        for ans in attempt.answers.all():
+            if ans.selected_choice.is_correct:
+                score += 1
+        attempt.score = score
+        attempt.completed = True
+        attempt.save()
+        return JsonResponse({"status": "ok", "attempt_id": attempt.id})
+    return JsonResponse({"status": "fail"}, status=400)
+
+
+def quiz_result(request, quiz_id, attempt_id):
+    attempt = get_object_or_404(QuizAttempt, id=attempt_id, student=request.user)
+    return render(request, "quiz_lectuer_result.html", {"attempt": attempt})
+
+
+from django.shortcuts import render, get_object_or_404
+from .models import BasicLecture, ClinicalLecture, Quiz, QuizAttempt
+@login_required
+def quiz_history(request, lecture_type, lecture_id):
+    """
+    lecture_type: 'basic' أو 'clinical'
+    """
+    if lecture_type == 'basic':
+        lecture = get_object_or_404(BasicLecture, id=lecture_id)
+        quizzes = lecture.quizzes.all()
+    elif lecture_type == 'clinical':
+        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+        quizzes = lecture.quizzes.all()
+    else:
+        return render(request, "error.html", {"message": "Invalid lecture type"})
+
+    # جميع المحاولات الخاصة بالمستخدم لكل الكويزات
+    attempts = QuizAttempt.objects.filter(quiz__in=quizzes, student=request.user).order_by('-started_at')
+
+    return render(request, "quiz_lectuer_history.html", {
+        "lecture": lecture,
+        "quizzes": quizzes,
+        "attempts": attempts,
+        "lecture_type": lecture_type
     })

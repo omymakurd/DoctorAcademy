@@ -4,6 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <title>{% block title %}Instructor Dashboard{% endblock %}</title>
+
+  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -23,6 +25,7 @@
       background-color: var(--bg);
     }
 
+    /* Navbar */
     .navbar {
       position: fixed;
       top: 0;
@@ -38,6 +41,7 @@
       z-index: 1000;
     }
 
+    /* Sidebar */
     .sidebar {
       position: fixed;
       top: var(--navbar-height);
@@ -47,6 +51,11 @@
       background-color: var(--primary);
       color: white;
       padding-top: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar.collapsed {
+      margin-left: -250px;
     }
 
     .sidebar a {
@@ -63,11 +72,17 @@
       border-left: 4px solid var(--accent);
     }
 
+    /* Main Content */
     .main-content {
       margin-left: var(--sidebar-width);
       margin-top: var(--navbar-height);
       padding: 2rem;
       min-height: calc(100vh - var(--navbar-height));
+      transition: all 0.3s ease;
+    }
+
+    .main-content.expanded {
+      margin-left: 0;
     }
 
     footer {
@@ -76,40 +91,99 @@
       border-top: 1px solid #ddd;
       margin-left: var(--sidebar-width);
       padding: 1rem;
+      transition: .3s;
     }
 
-    @media (max-width: 992px) {
-      .sidebar { position: relative; width: 100%; height: auto; }
-      .main-content, footer { margin-left: 0; }
+    footer.expanded {
+      margin-left: 0;
     }
+
+    /* Mobile */
+    @media (max-width: 992px) {
+      #sidebarToggle { display: block !important; }
+    }
+    .active-link {
+  background-color: var(--secondary) !important;
+  border-left: 4px solid var(--accent) !important;
+}
+
   </style>
 
   {% block extra_head %}{% endblock %}
 </head>
 <body>
+
+  <!-- Top Navbar -->
   <div class="navbar">
+    <button id="sidebarToggle" class="btn btn-light btn-sm d-lg-none" style="display:none;">
+      ☰
+    </button>
     <span><b>Instructor Panel</b></span>
     <a href="{% url 'logout' %}" class="btn btn-light btn-sm text-dark">Logout</a>
   </div>
 
-  <div class="sidebar">
-    <h5 class="text-center">{{ user.username }}</h5>
-    <a href="{% url 'instructor_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
-    <a href="#"><i class="bi bi-journal-text"></i> My Lectures</a>
-    <a href="#"><i class="bi bi-question-circle"></i> Quizzes</a>
-    <a href="#"><i class="bi bi-file-earmark-medical"></i> Case Studies</a>
-    <a href="#"><i class="bi bi-wallet2"></i> Earnings</a>
-  </div>
+  <!-- Sidebar -->
+  <div id="sidebar" class="sidebar">
+  <h5 class="text-center mb-3"><i class="bi bi-person-circle"></i> {{ user.username }}</h5>
 
-  <main class="main-content">
+  <a href="{% url 'lectures:instructor_dashboard' %}" 
+     class="{% if request.resolver_match.url_name == 'instructor_dashboard' %}active-link{% endif %}">
+     <i class="bi bi-speedometer2"></i> Dashboard
+  </a>
+
+  <a href="{% url 'lectures:module_wizard' %}" 
+     class="{% if request.resolver_match.url_name == 'module_wizard' %}active-link{% endif %}">
+     <i class="bi bi-journal-text"></i> Add Lecture
+  </a>
+
+ <a href="{% url 'lectures:my_lectures' %}" 
+   class="{% if request.resolver_match.url_name == 'my_lectures' %}active-link{% endif %}">
+   <i class="bi bi-collection-play"></i> My Lectures
+</a>
+
+
+  <a href="#" 
+     class="{% if request.resolver_match.url_name == 'quizzes' %}active-link{% endif %}">
+     <i class="bi bi-question-circle"></i> Quizzes
+  </a>
+
+  <a href="#" 
+     class="{% if request.resolver_match.url_name == 'cases' %}active-link{% endif %}">
+     <i class="bi bi-file-earmark-medical"></i> Case Studies
+  </a>
+
+  <a href="#" 
+     class="{% if request.resolver_match.url_name == 'earnings' %}active-link{% endif %}">
+     <i class="bi bi-wallet2"></i> Earnings
+  </a>
+</div>
+
+
+  <!-- Main Content -->
+  <main id="main" class="main-content">
     {% block content %}{% endblock %}
   </main>
 
-  <footer>
+  <!-- Footer -->
+  <footer id="footer">
     <small>© 2025 MedEdu Instructor Panel</small>
   </footer>
-  <!-- Bootstrap JS (v5.3+) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Bootstrap & Sidebar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const main = document.getElementById("main");
+    const footer = document.getElementById("footer");
+    const toggle = document.getElementById("sidebarToggle");
+
+    toggle.addEventListener("click", () => {
+      sidebar.classList.toggle("collapsed");
+      main.classList.toggle("expanded");
+      footer.classList.toggle("expanded");
+    });
+  </script>
 
 </body>
 </html>

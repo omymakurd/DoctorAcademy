@@ -1,11 +1,29 @@
-{% extends "dashboards/instructor_base.html" %}
+{% extends "base.html" %}
 {% block content %}
+
 <div class="container mt-4">
-  <h3>Add Clinical Lecture</h3>
-  <form method="post" class="mt-3">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-success">Save Lecture</button>
-  </form>
+    <h2>Add Clinical Lecture to: {{ module.title }}</h2>
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label class="form-label">Lecture Title</label>
+            <input type="text" name="title" class="form-control" placeholder="Enter lecture title">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description (Optional)</label>
+            <textarea name="description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Video URL (YouTube / Drive / Vimeo)</label>
+            <input type="text" name="video_url" class="form-control" placeholder="https://...">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Lecture</button>
+        <a href="{% url 'module_details' module.id %}" class="btn btn-secondary">Cancel</a>
+    </form>
 </div>
+
 {% endblock %}

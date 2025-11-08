@@ -1,0 +1,87 @@
+{% extends "dashboards/instructor_base.html" %}
+{% load static %}
+
+{% block title %}My Modules & Lectures{% endblock %}
+
+{% block content %}
+<style>
+    .module-card {
+        transition: 0.3s;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .module-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    .lecture-badge {
+        background: #0D47A1;
+        color: #fff;
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        margin-left: 6px;
+    }
+    .dropdown-menu a {
+        cursor: pointer;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">My Modules</h2>
+    <a href="{% url 'lectures:module_wizard' %}" class="btn btn-primary btn-lg">+ Create New Module</a>
+</div>
+
+{% if modules %}
+<div class="row">
+    {% for module in modules %}
+    <div class="col-md-4 mb-4">
+        <div class="card module-card shadow-sm">
+            {% if module.thumbnail %}
+            <img src="{{ module.thumbnail.url }}" class="card-img-top" alt="{{ module.title }}">
+            {% else %}
+            <img src="{% static 'images/default-module.jpg' %}" class="card-img-top" alt="No Image">
+            {% endif %}
+
+            <div class="card-body">
+                <h5 class="card-title fw-bold">{{ module.title }}</h5>
+                <p class="text-muted small mb-2">{{ module.created_at|date:"M d, Y" }}</p>
+                <p class="text-muted" style="min-height: 60px;">{{ module.description|truncatechars:100 }}</p>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="fw-bold text-primary">{{ module.price }} EGP</span>
+
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Manage</button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><a href="{% url 'lectures:module_detail' module.id %}" class="dropdown-item">View Module</a></li>
+                            <li><a href="{% url 'lectures:add_basic_lecture' module.id %}" class="btn btn-primary">
+  + Add Basic Lecture
+</a>
+</li>
+                            <li><a href="{% url 'lectures:add_clinical_lecture' module.id %}" class="dropdown-item">Add Clinical Lecture</a></li>
+                            <li><a href="{% url 'lectures:edit_module' module.id %}" class="dropdown-item">Edit Module</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a href="{% url 'lectures:delete_module' module.id %}" class="dropdown-item text-danger">Delete</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-light small d-flex justify-content-between">
+                <span>{{ module.basic_lectures.count }} Basic</span>
+                <span>{{ module.clinical_lectures.count }} Clinical</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <p class="text-muted mb-3">You have not created any modules yet.</p>
+    <a href="{% url 'lectures:module_wizard' %}" class="btn btn-primary btn-lg">Create your first module</a>
+</div>
+{% endif %}
+
+{% endblock %}

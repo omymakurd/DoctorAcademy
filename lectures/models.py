@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 User = settings.AUTH_USER_MODEL
 
@@ -244,8 +245,8 @@ class Choice(models.Model):
 # ========================
 class LectureProgress(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lecture_progress')
-    basic_lecture = models.ForeignKey(BasicLecture, on_delete=models.CASCADE, null=True, blank=True, related_name='progress_records')
-    clinical_lecture = models.ForeignKey(ClinicalLecture, on_delete=models.CASCADE, null=True, blank=True, related_name='progress_records')
+    basic_lecture = models.ForeignKey(BasicLecture, on_delete=models.CASCADE, null=True, blank=True)
+    clinical_lecture = models.ForeignKey(ClinicalLecture, on_delete=models.CASCADE, null=True, blank=True)
     status_choices = [('in_progress','In Progress'),('completed','Completed')]
     status = models.CharField(max_length=20, choices=status_choices, default='in_progress')
     started_at = models.DateTimeField(auto_now_add=True)
@@ -257,10 +258,23 @@ class LectureProgress(models.Model):
             ('student', 'clinical_lecture'),
         )
 
+    def update_status(self):
+        lecture = self.basic_lecture or self.clinical_lecture
+        quizzes = lecture.quizzes.all()
+        passed_quizzes = all(
+            quiz.attempts.filter(student=self.student, completed=True, score__gte=50).exists()
+            for quiz in quizzes
+        )
+        if passed_quizzes:
+            self.status = 'completed'
+            self.completed_at = timezone.now()
+        else:
+            self.status = 'in_progress'
+        self.save()
+
     def __str__(self):
         lecture_name = self.basic_lecture.title if self.basic_lecture else (self.clinical_lecture.title if self.clinical_lecture else "No Lecture")
         return f"{self.student.username} - {lecture_name} - {self.status}"
-
 
 class ModuleEnrollment(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='module_enrollments')
@@ -417,3 +431,48 @@ class PaymentTransaction(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.amount} {self.currency} - {self.status}"
+class QuizAttempt(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quiz_attempts')
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')
+    attempt_number = models.PositiveIntegerField(default=1)
+    score = models.FloatField(default=0.0)
+    completed = models.BooleanField(default=False)
+    started_at = models.DateTimeField(auto_now_add=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('student', 'quiz', 'attempt_number')
+
+    def __str__(self):
+        return f"{self.student.username} - {self.quiz.title} Attempt #{self.attempt_number}"
+
+    def mark_submitted(self):
+        self.submitted_at = timezone.now()
+        self.completed = True
+        self.calculate_score()
+        self.save()
+
+    def calculate_score(self):
+        total_questions = self.quiz.questions.count()
+        correct_answers = self.answers.filter(selected_choice__is_correct=True).count()
+        self.score = (correct_answers / total_questions * 100) if total_questions else 0
+
+    @property
+    def passed(self):
+        return self.score >= 50  # أو اجعلها quiz.pass_percentage
+
+
+class QuizAnswer(models.Model):
+    attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='answers')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected_choice = models.ForeignKey(Choice, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('attempt', 'question')
+
+    @property
+    def is_correct(self):
+        return self.selected_choice.is_correct if self.selected_choice else False
+
+    def __str__(self):
+        return f"{self.attempt} - Q:{self.question.id}"

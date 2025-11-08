@@ -1,0 +1,119 @@
+{% extends "dashboards/instructor_base.html" %}
+{% load static %}
+{% block title %}Manage Module | {{ module.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="fw-bold mb-3">{{ module.title }} 
+      <small class="text-muted">({{ module.get_status_display }})</small>
+  </h2>
+
+  <!-- Nav Tabs -->
+  <ul class="nav nav-tabs mb-3" id="moduleTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic" type="button" role="tab">Basic Lectures</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="clinical-tab" data-bs-toggle="tab" data-bs-target="#clinical" type="button" role="tab">Clinical Lectures</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="quizzes-tab" data-bs-toggle="tab" data-bs-target="#quizzes" type="button" role="tab">Quizzes</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="cases-tab" data-bs-toggle="tab" data-bs-target="#cases" type="button" role="tab">Case Studies</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="moduleTabsContent">
+    <!-- Basic Lectures -->
+    <div class="tab-pane fade show active" id="basic" role="tabpanel">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Basic Lectures</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBasicLectureModal">+ Add Lecture</button>
+      </div>
+      <div class="list-group">
+        {% for lecture in module.basic_lectures.all %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <span>{{ lecture.title }} - {{ lecture.discipline.get_name_display }}</span>
+          <div>
+            <a href="{% url 'instructor:edit_lecture' lecture.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <a href="{% url 'instructor:delete_lecture' lecture.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No lectures yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Clinical Lectures -->
+    <div class="tab-pane fade" id="clinical" role="tabpanel">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Clinical Lectures</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addClinicalLectureModal">+ Add Lecture</button>
+      </div>
+      <div class="list-group">
+        {% for lecture in module.clinical_lectures.all %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <span>{{ lecture.title }}</span>
+          <div>
+            <a href="{% url 'instructor:edit_lecture' lecture.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <a href="{% url 'instructor:delete_lecture' lecture.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No lectures yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Quizzes -->
+    <div class="tab-pane fade" id="quizzes" role="tabpanel">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Quizzes</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addQuizModal">+ Add Quiz</button>
+      </div>
+      <div class="list-group">
+        {% for quiz in module.quizzes.all %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <span>{{ quiz.title }}</span>
+          <div>
+            <a href="{% url 'instructor:edit_quiz' quiz.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <a href="{% url 'instructor:delete_quiz' quiz.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No quizzes yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Case Studies -->
+    <div class="tab-pane fade" id="cases" role="tabpanel">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Case Studies</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCaseStudyModal">+ Add Case Study</button>
+      </div>
+      <div class="list-group">
+        {% for case in module.case_studies.all %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <span>{{ case.title }}</span>
+          <div>
+            <a href="#" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <a href="#" class="btn btn-sm btn-outline-danger">Delete</a>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No case studies yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+{% include 'dashboards/modals/add_basic_lecture.html' %}
+{% include 'dashboards/modals/add_clinical_lecture.html' %}
+{% include 'dashboards/modals/add_quiz.html' %}
+{% include 'dashboards/modals/add_case_study.html' %}
+{% endblock %}
