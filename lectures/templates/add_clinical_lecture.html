@@ -1,29 +1,199 @@
-{% extends "base.html" %}
+{% extends "dashboards/instructor_base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Add Clinical Lecture | Instructor Dashboard{% endblock %}
+
 {% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Tajawal', sans-serif; }
+  h1,h2,h3,h4,h5,h6 { font-family: 'Poppins', sans-serif; }
 
-<div class="container mt-4">
-    <h2>Add Clinical Lecture to: {{ module.title }}</h2>
-    <form method="POST">
-        {% csrf_token %}
+  .card-custom {
+    background: #fff;
+    border-radius: 18px;
+    padding: 30px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+  }
 
-        <div class="mb-3">
-            <label class="form-label">Lecture Title</label>
-            <input type="text" name="title" class="form-control" placeholder="Enter lecture title">
+  .form-control, .form-select {
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid #d3dce6;
+  }
+  .form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 4px rgba(13,110,253,0.15);
+  }
+
+  #zoomSection {
+    border: 1px solid #d9e4f0;
+    border-radius: 16px;
+    background: #f9fbff;
+    padding: 20px;
+    display: none;
+  }
+  #zoomSection input:required {
+    border-left: 3px solid #dc3545 !important;
+  }
+</style>
+
+<div class="container mt-5 mb-5">
+  <div class="card-custom">
+    <h2 class="fw-bold mb-4">➕ Add Clinical Lecture</h2>
+
+    <form id="lectureForm" method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="row g-3">
+
+        <!-- Lecture Type -->
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Lecture Type</label>
+          {{ lecture_form.lecture_type|add_class:"form-select" }}
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Description (Optional)</label>
-            <textarea name="description" class="form-control" rows="3"></textarea>
+        <!-- Lecture Title -->
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Lecture Title</label>
+          {{ lecture_form.title|add_class:"form-control" }}
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Video URL (YouTube / Drive / Vimeo)</label>
-            <input type="text" name="video_url" class="form-control" placeholder="https://...">
+        <!-- Description -->
+        <div class="col-12">
+          <label class="form-label fw-bold">Description</label>
+          {{ lecture_form.description|add_class:"form-control" }}
         </div>
 
-        <button type="submit" class="btn btn-primary">Add Lecture</button>
-        <a href="{% url 'module_details' module.id %}" class="btn btn-secondary">Cancel</a>
+        <!-- Video Section -->
+        <div id="videoSection" class="col-12">
+          <label class="form-label fw-bold">Upload Video</label>
+          {{ lecture_form.video_file|add_class:"form-control" }}
+          <small class="text-muted">أو استخدم رابط الفيديو</small>
+          {{ lecture_form.video_url|add_class:"form-control mt-1" }}
+        </div>
+
+        <!-- Zoom Section -->
+        <div id="zoomSection" class="col-12">
+          <h5 class="fw-bold mb-3">🎥 Zoom Live Settings</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Start Time</label>
+              {{ lecture_form.zoom_start_time|add_class:"form-control zoom-field" }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Duration (minutes)</label>
+              {{ lecture_form.zoom_duration|add_class:"form-control zoom-field" }}
+            </div>
+          </div>
+          <small class="text-muted">سيتم إنشاء اجتماع Zoom تلقائيًا عند الحفظ</small>
+        </div>
+
+        <!-- Attach File -->
+        <div class="col-12">
+          <label class="form-label fw-bold">Attach File (optional)</label>
+          {{ lecture_form.attachment|add_class:"form-control" }}
+        </div>
+
+        <!-- Submit Button -->
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary w-100 mt-3">💾 Save Lecture</button>
+        </div>
+      </div>
     </form>
+  </div>
 </div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="lectureSuccessModal" tabindex="-1" aria-labelledby="lectureSuccessModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="lectureSuccessModalLabel">✅ Lecture Saved!</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        المحاضرة تم حفظها بنجاح! ماذا تريد أن تفعل الآن؟
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+        <a href="#" id="addQuizBtn" class="btn btn-primary"  target="_blank">➕ إضافة Quiz</a>
+        <a href="#" id="addCaseBtn" class="btn btn-success">➕ إضافة Case Study</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const lectureType = document.querySelector("#id_lecture_type");
+  const videoSection = document.getElementById("videoSection");
+  const zoomSection = document.getElementById("zoomSection");
+  const zoomStart = document.getElementById("id_zoom_start_time");
+  const zoomDuration = document.getElementById("id_zoom_duration");
+
+  function toggleFields() {
+    const type = lectureType.value.toLowerCase();
+    if (type.includes("zoom")) {
+      zoomSection.style.display = "block";
+      videoSection.style.display = "none";
+      zoomStart.required = true;
+      zoomDuration.required = true;
+
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 30);
+      zoomStart.min = now.toISOString().slice(0,16);
+    } else {
+      zoomSection.style.display = "none";
+      videoSection.style.display = "block";
+      zoomStart.required = false;
+      zoomDuration.required = false;
+    }
+  }
+
+  lectureType.addEventListener("change", toggleFields);
+  toggleFields();
+
+  // AJAX submit
+  document.getElementById("lectureForm").addEventListener("submit", function(e){
+    e.preventDefault();
+
+    if(zoomSection.style.display === "block"){
+      const startTime = new Date(zoomStart.value);
+      if(startTime <= new Date()){
+        alert("❌ يجب اختيار وقت مستقبل لمحاضرة Zoom");
+        zoomStart.focus();
+        return;
+      }
+    }
+
+    let formData = new FormData(this);
+
+    fetch("{% url 'lectures:add_clinical_lecture' module.id %}", {
+      method: "POST",
+      headers: {'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest'},
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.success){
+        // عرض المودال
+        const modal = new bootstrap.Modal(document.getElementById('lectureSuccessModal'));
+        modal.show();
+
+        // إعداد روابط الأزرار
+         document.getElementById('addQuizBtn').href = `/lectures/instructor/lecture/${data.lecture_type}/${data.lecture_id}/quiz/add_page/`;
+        document.getElementById('addCaseBtn').href = `/lectures/instructor/lecture/${data.lecture_id}/case/add/`;
+
+
+      } else {
+        alert("❌ Errors: " + JSON.stringify(data.errors));
+      }
+    })
+    .catch(err => console.error(err));
+  });
+});
+</script>
 
 {% endblock %}

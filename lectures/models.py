@@ -161,6 +161,8 @@ class BasicLecture(LectureBase):
 
 class ClinicalLecture(LectureBase):
     video_url = models.URLField(blank=True, null=True)
+    video_file = models.FileField(upload_to='lectures/videos/', blank=True, null=True)  # ✅ جديد
+
     zoom_link = models.URLField(blank=True, null=True)
     zoom_meeting_id = models.CharField(max_length=100, blank=True, null=True)
     zoom_start_time = models.DateTimeField(blank=True, null=True)

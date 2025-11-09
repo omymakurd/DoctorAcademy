@@ -1,152 +1,160 @@
 {% extends "dashboards/instructor_base.html" %}
-{% load static i18n %}
-
+{% load static %}
 {% block title %}Instructor Dashboard{% endblock %}
 
-{% block extra_head %}
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-  .card {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    text-align: center;
-    transition: all 0.3s ease;
-  }
-  .card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  }
-  .chart-container {
-    background: white;
-    padding: 1rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  }
-  table thead {
-    background-color: #0D47A1;
-    color: white;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<h2 class="mb-4">Welcome, {{ user.username }}</h2>
-<div class="mb-4">
-  <a href="{% url 'lectures:module_wizard' %}" class="btn btn-primary me-2">
-    <i class="bi bi-plus-circle"></i> Add  Lecture
-  </a>
- 
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="mb-0">Instructor Dashboard</h3>
+    <small class="text-muted">Performance overview and student activity</small>
+  </div>
+
+  <div class="d-flex gap-2 align-items-center">
+    <select id="filterRange" class="form-select form-select-sm">
+      <option value="30">Last 30 Days</option>
+      <option value="90">Last 90 Days</option>
+      <option value="365">Last Year</option>
+    </select>
+    <a href="{% url 'lectures:module_wizard' %}" class="btn btn-primary btn-sm">Add Module</a>
+  </div>
 </div>
 
-<!-- Cards -->
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm p-3">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <small class="text-muted">Total Earnings</small>
+          <h5 class="mb-0">{{ total_earnings|default:"0.00" }} {{ currency|default:"USD" }}</h5>
+        </div>
+        <i class="bi bi-currency-dollar fs-2 text-warning"></i>
+      </div>
+      <small class="text-success">+{{ earnings_change_percent|default:0 }}% this month</small>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm p-3">
+      <div class="d-flex justify-content-between">
+        <div>
+          <small class="text-muted">Active Students</small>
+          <h5 class="mb-0">{{ active_students_count|default:0 }}</h5>
+        </div>
+        <i class="bi bi-people fs-2 text-primary"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm p-3">
+      <div class="d-flex justify-content-between">
+        <div>
+          <small class="text-muted">Total Lectures</small>
+          <h5 class="mb-0">{{ lectures_count|default:0 }}</h5>
+        </div>
+        <i class="bi bi-collection-play fs-2 text-info"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm p-3">
+      <div class="d-flex justify-content-between">
+        <div>
+          <small class="text-muted">Average Rating</small>
+          <h5 class="mb-0">{{ avg_rating|default:"—" }}</h5>
+        </div>
+        <i class="bi bi-star-fill fs-2 text-warning"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
 <div class="row mb-4">
-  <div class="col-md-3 mb-3">
-    <div class="card p-3">
-      <h5>Courses</h5>
-      <h3>{{ courses_count }}</h3>
+  <div class="col-lg-8 mb-3">
+    <div class="card p-3 shadow-sm">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">Monthly Revenue</h6>
+        <small class="text-muted">Current: {{ total_earnings|default:"0.00" }}</small>
+      </div>
+      <div style="height:320px;">
+        <canvas id="revenueChart"></canvas>
+      </div>
     </div>
   </div>
-  <div class="col-md-3 mb-3">
-    <div class="card p-3">
-      <h5>Lectures</h5>
-      <h3>{{ lectures_count }}</h3>
-    </div>
-  </div>
-  <div class="col-md-3 mb-3">
-    <div class="card p-3">
-      <h5>Students</h5>
-      <h3>{{ students_count }}</h3>
-    </div>
-  </div>
-  <div class="col-md-3 mb-3">
-    <div class="card p-3">
-      <h5>Case Studies</h5>
-      <h3>{{ cases_count }}</h3>
+
+  <div class="col-lg-4 mb-3">
+    <div class="card p-3 shadow-sm">
+      <h6>Top 5 Lectures (Completion Rate)</h6>
+      <ul class="list-group list-group-flush mt-2">
+        {% for item in top_lectures %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-bold">{{ item.title }}</div>
+            <small class="text-muted">{{ item.module_title }}</small>
+          </div>
+          <div class="text-end">
+            <div>{{ item.complete_percent }}%</div>
+            <small class="text-muted">{{ item.completed }} / {{ item.total }}</small>
+          </div>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-center text-muted">No data available</li>
+        {% endfor %}
+      </ul>
     </div>
   </div>
 </div>
 
-<!-- Charts -->
-<div class="row">
-  <div class="col-lg-6 mb-4">
-    <div class="chart-container">
-      <canvas id="lecturesChart"></canvas>
-    </div>
+<!-- Recent Activity Table -->
+<div class="card p-3 shadow-sm mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="mb-0">Recent Student Activity</h6>
+    <a class="small" href="#">View All</a>
   </div>
-  <div class="col-lg-6 mb-4">
-    <div class="chart-container">
-      <canvas id="studentsChart"></canvas>
-    </div>
-  </div>
-</div>
 
-<!-- Recent Activity -->
-<div class="mt-4">
-  <h4>Recent Activity</h4>
   <div class="table-responsive">
-    <table class="table table-hover align-middle">
-      <thead>
+    <table class="table table-borderless align-middle">
+      <thead class="small text-muted">
         <tr>
           <th>Student</th>
           <th>Lecture</th>
           <th>Status</th>
-          <th>Completed At</th>
+          <th>Completion Date</th>
+          <th>More</th>
         </tr>
       </thead>
       <tbody>
-        {% for progress in recent_progress %}
+        {% for p in recent_progress %}
         <tr>
-          <td>{{ progress.student.username }}</td>
+          <td>{{ p.student.get_full_name|default:p.student.username }}</td>
           <td>
-            {% if progress.basic_lecture %}
-              {{ progress.basic_lecture.title }}
+            {% if p.basic_lecture %}
+              {{ p.basic_lecture.title }}
             {% else %}
-              {{ progress.clinical_lecture.title }}
+              {{ p.clinical_lecture.title }}
             {% endif %}
           </td>
-          <td>{{ progress.status }}</td>
-          <td>{{ progress.completed_at|date:"d M Y" }}</td>
+          <td>
+            {% if p.status == 'completed' %}
+              <span class="badge bg-success">{{ p.status }}</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ p.status }}</span>
+            {% endif %}
+          </td>
+          <td>{{ p.completed_at|date:"d M Y H:i" }}</td>
+          <td>
+            <a href="{% if p.basic_lecture %}{% url 'lectures:lecture_learning' 'basic' p.basic_lecture.id %}{% else %}{% url 'lectures:lecture_learning' 'clinical' p.clinical_lecture.id %}{% endif %}" class="btn btn-sm btn-outline-primary">View</a>
+          </td>
         </tr>
         {% empty %}
-        <tr>
-          <td colspan="4" class="text-center text-muted">No recent activity.</td>
-        </tr>
+        <tr><td colspan="5" class="text-center text-muted">No recent activity</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Charts JS -->
-<script>
-const lecturesChart = new Chart(document.getElementById('lecturesChart'), {
-  type: 'bar',
-  data: {
-    labels: {{ lecture_labels|safe }},
-    datasets: [{
-      label: 'Lectures Completed',
-      data: {{ lecture_data|safe }},
-      backgroundColor: '#FFA000'
-    }]
-  },
-  options: { responsive: true, maintainAspectRatio: false }
-});
-
-const studentsChart = new Chart(document.getElementById('studentsChart'), {
-  type: 'line',
-  data: {
-    labels: {{ student_labels|safe }},
-    datasets: [{
-      label: 'Student Progress',
-      data: {{ student_data|safe }},
-      borderColor: '#0D47A1',
-      fill: false,
-      tension: 0.3
-    }]
-  },
-  options: { responsive: true, maintainAspectRatio: false }
-});
-</script>
 {% endblock %}

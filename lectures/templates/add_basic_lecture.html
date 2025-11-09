@@ -43,7 +43,7 @@ document.getElementById('lectureForm').addEventListener('submit', function(e) {
 
     const formData = new FormData(this);
 
-    fetch("{% url 'add_basic_lecture' %}", {
+    fetch("{% url 'lectures:add_basic_lecture' %}", {
         method: 'POST',
         body: formData,
         headers: {
@@ -67,7 +67,7 @@ document.getElementById('lectureForm').addEventListener('submit', function(e) {
 <script>
 document.getElementById('id_system').addEventListener('change', function() {
     const systemId = this.value;
-    const url = "{% url 'ajax_load_disciplines' %}?system_id=" + systemId;
+    const url = "{% url 'lectures:ajax_load_disciplines' %}?system_id=" + systemId;
     fetch(url)
         .then(response => response.json())
         .then(data => {

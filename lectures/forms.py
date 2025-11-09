@@ -114,17 +114,14 @@ class BasicLectureForm(forms.ModelForm):
 # Clinical Lecture Form
 # =======================
 class ClinicalLectureForm(forms.ModelForm):
-    module = forms.ModelChoiceField(
-        queryset=Module.objects.filter(clinical_system__isnull=False),
-        required=True,
-        label="Module"
-    )
+    video_file = forms.FileField(required=False, label="Upload Video") 
 
     class Meta:
         model = ClinicalLecture
         fields = [
             'module',
             'title',
+            'video_file',
             'lecture_type',
             'video_url',
             'description',
@@ -137,6 +134,7 @@ class ClinicalLectureForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        module_instance = kwargs.pop('module_instance', None)
         super().__init__(*args, **kwargs)
 
         # فلترة الموديولات الخاصة بالمستخدم
@@ -145,4 +143,53 @@ class ClinicalLectureForm(forms.ModelForm):
                 clinical_system__isnull=False, instructor=user
             )
 
-        
+        # إذا تم تمرير module_instance، نخفي الحقل أو نجعله غير مطلوب
+        if module_instance:
+            self.fields['module'].initial = module_instance
+            self.fields['module'].widget = forms.HiddenInput()
+            self.fields['module'].required = False
+# lectures/forms.py
+from django import forms
+from django.forms import inlineformset_factory
+from .models import Quiz, Question, Choice
+
+# فورم الكويز نفسه
+class QuizForm(forms.ModelForm):
+    class Meta:
+        model = Quiz
+        fields = ['title', 'lecture_type', 'basic_lecture', 'clinical_lecture', 'time_limit_minutes', 'shuffle_questions']
+        widgets = {
+            'title': forms.TextInput(attrs={'class':'form-control'}),
+            'time_limit_minutes': forms.NumberInput(attrs={'class':'form-control'}),
+            'shuffle_questions': forms.CheckboxInput(attrs={'class':'form-check-input'}),
+        }
+
+# فورم السؤال
+class QuestionForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = ['text']
+        widgets = {
+            'text': forms.Textarea(attrs={'class':'form-control', 'rows':2}),
+        }
+
+# فورم الاختيار
+class ChoiceForm(forms.ModelForm):
+    class Meta:
+        model = Choice
+        fields = ['text', 'is_correct']
+        widgets = {
+            'text': forms.TextInput(attrs={'class':'form-control'}),
+            'is_correct': forms.CheckboxInput(attrs={'class':'form-check-input'}),
+        }
+
+# inline formsets
+QuestionFormSet = inlineformset_factory(
+    Quiz, Question, form=QuestionForm,
+    extra=1, can_delete=True
+)
+
+ChoiceFormSet = inlineformset_factory(
+    Question, Choice, form=ChoiceForm,
+    extra=4, can_delete=True
+)

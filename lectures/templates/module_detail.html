@@ -56,27 +56,32 @@
     <h4 class="fw-bold">Lectures</h4>
 
 {% if module.basiclectures.exists or module.clinicallectures.exists %}
-    <ul class="list-group">
+   <ul class="list-group">
 
-               
 {% for lecture in module.basiclectures.all %}
 <li class="list-group-item d-flex justify-content-between align-items-center">
     <strong>{{ lecture.title }}</strong>
-
-    {% comment %}التحقق من الدفع مباشرة في القالب (خيار سريع) أو اذهب للـ view الذي سيعيد توجيه للـ checkout{% endcomment %}
     {% if user.is_authenticated %}
-    <a href="{% url 'lectures:lecture_learning' 'basic' lecture.id %}" 
-       class="btn btn-sm btn-outline-primary">View</a>
-{% else %}
-    <a href="{% url 'login' %}" 
-       class="btn btn-sm btn-outline-primary">Login</a>
-{% endif %}
-
+    <a href="{% url 'lectures:lecture_learning' 'basic' lecture.id %}" class="btn btn-sm btn-outline-primary">View</a>
+    {% else %}
+    <a href="{% url 'login' %}" class="btn btn-sm btn-outline-primary">Login</a>
+    {% endif %}
 </li>
 {% endfor %}
 
+{% for lecture in module.clinicallectures.all %}
+<li class="list-group-item d-flex justify-content-between align-items-center">
+    <strong>{{ lecture.title }}</strong>
+    {% if user.is_authenticated %}
+    <a href="{% url 'lectures:lecture_learning' 'clinical' lecture.id %}" class="btn btn-sm btn-outline-primary">View</a>
+    {% else %}
+    <a href="{% url 'login' %}" class="btn btn-sm btn-outline-primary">Login</a>
+    {% endif %}
+</li>
+{% endfor %}
 
-    </ul>
+</ul>
+
 {% else %}
     <p class="text-muted">No lectures available yet.</p>
 {% endif %}

@@ -13,45 +13,94 @@ from django.utils.translation import gettext as _
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-
+from django.db.models import Sum, Count, Avg, F
+from django.http import JsonResponse
+from django.utils import timezone
+import datetime
+import json
 @login_required
 def instructor_dashboard(request):
     user = request.user
 
-    # عدد الدورات والمحاضرات والطلاب والكيس ستادي
-    
+    # counts
     lectures_count = BasicLecture.objects.filter(instructor=user).count() + ClinicalLecture.objects.filter(instructor=user).count()
-    students_count = User.objects.filter(lecture_progress__basic_lecture__in=BasicLecture.objects.filter(instructor=user)).distinct().count() + \
-                     User.objects.filter(lecture_progress__clinical_lecture__in=ClinicalLecture.objects.filter(instructor=user)).distinct().count()
-    cases_count = CaseStudy.objects.filter(created_by=user).count()
 
-    # بيانات Recent Activity (آخر 10 تسجيلات تقدم للطلاب على محاضرات هذا المحاضر)
+    # students active (distinct)
+    students_basic = User.objects.filter(lecture_progress__basic_lecture__in=BasicLecture.objects.filter(instructor=user)).distinct()
+    students_clinical = User.objects.filter(lecture_progress__clinical_lecture__in=ClinicalLecture.objects.filter(instructor=user)).distinct()
+    active_students_count = (students_basic | students_clinical).distinct().count()
+
+    # recent activity
     recent_progress = LectureProgress.objects.filter(
         basic_lecture__in=BasicLecture.objects.filter(instructor=user)
     ).order_by('-completed_at')[:10]
 
-    # مثال بيانات للCharts
-    lecture_labels = [lecture.title for lecture in BasicLecture.objects.filter(instructor=user)]
-    lecture_data = [LectureProgress.objects.filter(basic_lecture=lecture, status='completed').count() for lecture in BasicLecture.objects.filter(instructor=user)]
+    # earnings (use Payment model)
+    total_earnings = Payment.objects.filter(module__in=Module.objects.filter(instructor=user), status='completed').aggregate(total=Sum('amount'))['total'] or 0
 
-    student_labels = [student.username for student in User.objects.filter(lecture_progress__basic_lecture__in=BasicLecture.objects.filter(instructor=user)).distinct()]
-    student_data = [LectureProgress.objects.filter(student__username=username, status='completed').count() for username in student_labels]
+    # average rating
+    avg_rating = LectureReview.objects.filter(
+        basic_lecture__in=BasicLecture.objects.filter(instructor=user)
+    ).aggregate(avg=Avg('rating'))['avg'] or 0
+
+    # top lectures by completion %
+    top_lectures = []
+    basic_lects = BasicLecture.objects.filter(instructor=user).annotate(
+    total = Count('module__basiclectures')
+)[:10]
+
+    # a robust way:
+    for lec in BasicLecture.objects.filter(instructor=user):
+        total = LectureProgress.objects.filter(basic_lecture=lec).count()
+        completed = LectureProgress.objects.filter(basic_lecture=lec, status='completed').count()
+        percent = int((completed / total * 100) if total else 0)
+        top_lectures.append({
+            'title': lec.title,
+            'module_title': lec.module.title if lec.module else '',
+            'completed': completed,
+            'total': total,
+            'complete_percent': percent
+        })
+    top_lectures = sorted(top_lectures, key=lambda x: x['complete_percent'], reverse=True)[:5]
+
+    # revenue data for last N days (default 30)
+    days = int(request.GET.get('days', 30))
+    today = timezone.now().date()
+    start = today - datetime.timedelta(days=days-1)
+    daily = Payment.objects.filter(created_at__date__gte=start, created_at__date__lte=today, status='completed', module__in=Module.objects.filter(instructor=user))\
+        .extra({'day': "date(created_at)"}).values('day').annotate(total=Sum('amount')).order_by('day')
+
+    # prepare arrays for chart labels/data
+    labels = []
+    data = []
+    day_map = {d['day'].isoformat(): float(d['total']) for d in daily}
+    for i in range(days):
+        d = start + datetime.timedelta(days=i)
+        labels.append(d.strftime('%d %b'))
+        data.append(day_map.get(d.isoformat(), 0))
 
     context = {
-       
         'lectures_count': lectures_count,
-        'students_count': students_count,
-        'cases_count': cases_count,
+        'students_count': active_students_count,
+        'cases_count': CaseStudy.objects.filter(created_by=user).count(),
         'recent_progress': recent_progress,
-        'lecture_labels': lecture_labels,
-        'lecture_data': lecture_data,
-        'student_labels': student_labels,
-        'student_data': student_data,
-        'primary_color': '#0D47A1',
+        'lecture_labels': [l['title'] for l in top_lectures],
+        'lecture_data': [l['complete_percent'] for l in top_lectures],
+        'student_labels': [], 'student_data': [],
+        'primary_color': '#0056D2',
         'accent_color': '#FFA000',
+        'total_earnings': total_earnings,
+        'avg_rating': round(avg_rating, 2),
+        'top_lectures': top_lectures,
+        'revenue_labels_json': json.dumps(labels),
+        'revenue_data_json': json.dumps(data),
+        'revenue_labels': labels,
+        'revenue_data': data,
+        'currency': 'USD',
+        'earnings_change_percent': 12,
     }
-
     return render(request, 'instructor_dashboard.html', context)
+
 
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -150,6 +199,7 @@ def add_quiz(request, lecture_id):
 
     
     return JsonResponse({'success': False, 'errors': 'Invalid request'})
+
 from .models import Quiz, Question, Choice
 
 
@@ -269,21 +319,32 @@ def module_wizard(request):
 
 
 @login_required
-def add_clinical_lecture(request):
+def add_clinical_lecture(request, module_id):
     if not request.user.is_instructor:
-        return redirect('home')
+        return JsonResponse({'success': False, 'errors': 'Not authorized'}, status=403)
+
+    module = get_object_or_404(Module, id=module_id)
 
     if request.method == 'POST':
-        form = ClinicalLectureForm(request.POST, user=request.user)
+        form = ClinicalLectureForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             lecture = form.save(commit=False)
             lecture.instructor = request.user
+            lecture.module = module  # ربط المحاضرة بالـ module
             lecture.save()
-            return redirect('instructor_dashboard')
+
+            # 🔹 هنا نعيد JSON وليس redirect
+            return JsonResponse({
+                "success": True,
+                "lecture_id": lecture.id,
+                "lecture_type": "clinical"
+            })
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     else:
         form = ClinicalLectureForm(user=request.user)
 
-    return render(request, 'add_clinical_lecture.html', {'form': form})
+    return render(request, 'add_clinical_lecture.html', {'lecture_form': form, 'module': module})
 
 @login_required
 def load_disciplines(request):
@@ -470,30 +531,36 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from .models import Module, ClinicalLecture
 
+from django.http import JsonResponse
+
 @login_required
 def add_clinical_lecture(request, module_id):
-    module = get_object_or_404(Module, id=module_id)
-
+    module = get_object_or_404(Module, id=module_id, instructor=request.user)
+    
     if request.method == "POST":
-        title = request.POST.get("title")
-        description = request.POST.get("description")
-        video_url = request.POST.get("video_url")
+        form = ClinicalLectureForm(request.POST, request.FILES, user=request.user, module_instance=module)
+        if form.is_valid():
+            lecture = form.save(commit=False)
+            lecture.instructor = request.user
+            lecture.module = module
+            lecture.save()
+            
+            # لو أردت إضافة الفيديو/attachments هنا أي شيء إضافي
+            # lecture.video_file = form.cleaned_data.get('video_file')
+            # lecture.save()
+            
+            # رجع JSON للـAJAX
+            return JsonResponse({"success": True, "lecture_id": lecture.id})
+        else:
+            # يمكن طباعة الأخطاء في الكونسول
+            print(form.errors)
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+    else:
+        form = ClinicalLectureForm(user=request.user, module_instance=module)
 
-        if not title or not video_url:
-            messages.error(request, "Title and Video URL are required.")
-            return redirect("add_clinical_lecture", module_id=module.id)
+    return render(request, 'add_clinical_lecture.html', {'lecture_form': form, 'module': module})
 
-        lecture = ClinicalLecture.objects.create(
-            module=module,
-            title=title,
-            description=description,
-            video_url=video_url
-        )
 
-        messages.success(request, "Clinical Lecture added successfully.")
-        return redirect("module_details", module_id=module.id)
-
-    return render(request, "lectures/add_clinical_lecture.html", {"module": module})
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -732,3 +799,67 @@ def lecture_learning_view(request, lecture_type, lecture_id):
         'lecture_type': lecture_type,
     }
     return render(request, 'lecture_learning.html', context)
+
+
+
+from django.shortcuts import get_object_or_404, redirect
+from .models import Module
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def delete_module(request, module_id):
+    module = get_object_or_404(Module, id=module_id, instructor=request.user)
+    if request.method == "POST":
+        module.delete()
+        return redirect('lectures:my_lectures')
+    return render(request, 'confirm_delete_module.html', {'module': module})
+
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.decorators import login_required
+from .models import BasicLecture, ClinicalLecture, Quiz, Question, Choice
+from .forms import QuizForm, QuestionFormSet, ChoiceFormSet
+
+@login_required
+def add_lecture_quiz_page(request, lecture_type, lecture_id):
+    if lecture_type == 'basic':
+        lecture = get_object_or_404(BasicLecture, id=lecture_id)
+    elif lecture_type == 'clinical':
+        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+    else:
+        return redirect('quiz_list')  # أو صفحة خطأ
+
+    if request.method == 'POST':
+        quiz_form = QuizForm(request.POST)
+        if quiz_form.is_valid():
+            quiz = quiz_form.save(commit=False)
+            quiz.lecture_type = lecture_type
+            if lecture_type == 'basic':
+                quiz.basic_lecture = lecture
+            else:
+                quiz.clinical_lecture = lecture
+            quiz.save()
+
+            question_formset = QuestionFormSet(request.POST, instance=quiz)
+            if question_formset.is_valid():
+                questions = question_formset.save()
+                for i, question in enumerate(questions):
+                    choice_formset = ChoiceFormSet(
+                        request.POST,
+                        instance=question,
+                        prefix=f'choices-{i}'
+                    )
+                    if choice_formset.is_valid():
+                        choice_formset.save()
+            return redirect('quiz_list')
+    else:
+        quiz_form = QuizForm()
+        question_formset = QuestionFormSet()
+        choice_formsets = [ChoiceFormSet(prefix=f'choices-{i}') for i, f in enumerate(question_formset.forms)]
+
+    return render(request, 'add_lecture_quiz.html', {
+        'quiz_form': quiz_form,
+        'question_formset': question_formset,
+        'choice_formsets': choice_formsets,
+        'lecture': lecture
+    })
+

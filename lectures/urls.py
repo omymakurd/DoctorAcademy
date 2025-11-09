@@ -20,7 +20,7 @@ urlpatterns = [
     path("instructor/my-lectures/", views.my_lectures, name="my_lectures"),
     path("module/<int:module_id>/edit/", views.edit_module, name="edit_module"),
     path('module/<int:module_id>/add/basic/', views.add_basic_lecture, name='add_basic_lecture'),
-    path('lectures/add/clinical/', views.add_clinical_lecture, name='add_clinical_lecture'),
+    path('module/<int:module_id>/add/clinical/', views.add_clinical_lecture, name='add_clinical_lecture'),
     path('module/<int:module_id>/learn/', views.module_learning_view, name='module_learning'),
     path('lecture/<int:lecture_id>/review/', views.add_review, name='add_review'),
     path('quiz/<int:quiz_id>/take/', views.take_quiz, name='take_quiz'),
@@ -28,7 +28,9 @@ urlpatterns = [
     path('quiz/<int:quiz_id>/submit/', views.quiz_submit, name='quiz-submit'),
     path('quiz/<int:quiz_id>/<int:attempt_id>/result/', views.quiz_result, name='quiz-result'),
     path('lecture/<str:lecture_type>/<int:lecture_id>/quiz-history/',views.quiz_history,name='quiz_lectuer_history'),
-   
+    path('module/<int:module_id>/delete/', views.delete_module, name='delete_module'),
+
     path('lecture/<str:lecture_type>/<int:lecture_id>/learn/', views.lecture_learning_view, name='lecture_learning'),
- 
-]
+    path('instructor/lecture/<str:lecture_type>/<int:lecture_id>/quiz/add_page/', views.add_lecture_quiz_page, name='add_lecture_quiz_page'),
+
+    ]
