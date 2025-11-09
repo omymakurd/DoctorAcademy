@@ -1,0 +1,10 @@
+/* student_dashboard.css */
+.stat-card { border-radius: 12px; }
+.course-card { border-radius: 10px; overflow: hidden; }
+.object-cover { object-fit: cover; width:100%; height:100%; }
+.placeholder-thumbnail { height:100%; background:#f5f6f8; color:#9aa0a6; }
+.stat-card .card-body i { opacity:0.95; }
+.card.course-card { border:1px solid #f0f0f0; }
+@media (max-width: 576px) {
+  .object-cover { height:120px; }
+}

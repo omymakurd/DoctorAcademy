@@ -1,121 +1,188 @@
 {% extends 'base.html' %}
-{% load static i18n %}
+{% load static %}
+{% load get_item %}
+
+{% block title %}Student Dashboard{% endblock %}
+{% block head_extra %}
+<link href="{% static 'css/student_dashboard.css' %}" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
 
 {% block content %}
-{% if request.LANGUAGE_CODE == 'ar' %}
-<link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
-<style>
-    body { direction: rtl; text-align: right; }
-    .card-hover:hover { transform: translateY(-5px); transition: 0.3s; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
-</style>
-{% else %}
-<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-{% endif %}
-
 <div class="container py-5">
 
-    <!-- Greeting -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <h2 class="fw-bold">
-            {% if request.LANGUAGE_CODE == 'ar' %}
-                مرحباً، {{ request.user.username }} 👋
-            {% else %}
-                Welcome, {{ request.user.username }} 👋
-            {% endif %}
-        </h2>
-        <p class="text-muted mb-0">
-            {% if request.LANGUAGE_CODE == 'ar' %}
-                هذه لوحة تحكم الطالب الخاصة بك
-            {% else %}
-                This is your student dashboard.
-            {% endif %}
-        </p>
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="fw-bold mb-1">Welcome, {{ request.user.first_name|default:request.user.username }} 👋</h2>
+      <p class="text-muted mb-0">Your learning progress, courses, quizzes and certificates – all in one place.</p>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row g-4 mb-5">
-        <div class="col-md-4">
-            <div class="card text-center shadow-sm p-3 rounded-4">
-                <div class="card-body">
-                    <i class="bi bi-journal-bookmark fs-1 text-primary mb-2"></i>
-                    <h5 class="card-title fw-bold">{% trans "Enrolled Courses" %}</h5>
-                    <p class="card-text fs-4 fw-semibold">{{ enrollments|length }}</p>
-                </div>
-            </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'profile' %}" class="btn btn-outline-secondary">My Profile</a>
+      <a href="{% url 'courses:all_courses' %}" class="btn btn-primary">Browse Courses</a>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-md-3">
+      <div class="card stat-card h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-journal-bookmark fs-1 text-primary"></i>
+          <div class="mt-2 small text-muted">Enrolled Courses</div>
+          <div class="h4 fw-bold mt-1">{{ enrollments|length }}</div>
         </div>
-        <div class="col-md-4">
-            <div class="card text-center shadow-sm p-3 rounded-4">
-                <div class="card-body">
-                    <i class="bi bi-bookmark-check fs-1 text-success mb-2"></i>
-                    <h5 class="card-title fw-bold">{% trans "Completed Courses" %}</h5>
-                    <p class="card-text fs-4 fw-semibold">{{ completed_courses|length }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center shadow-sm p-3 rounded-4">
-                <div class="card-body">
-                    <i class="bi bi-clock-history fs-1 text-warning mb-2"></i>
-                    <h5 class="card-title fw-bold">{% trans "Active Lectures" %}</h5>
-                    <p class="card-text fs-4 fw-semibold">{{ active_lectures|length }}</p>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
 
-    <!-- Enrolled Courses -->
-    <h4 class="fw-bold mb-3 text-primary">
-        {% if request.LANGUAGE_CODE == 'ar' %}
-            الكورسات التي أنت مشترك بها
-        {% else %}
-            Your Enrolled Courses
-        {% endif %}
-    </h4>
+    <div class="col-sm-6 col-md-3">
+      <div class="card stat-card h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-check2-circle fs-1 text-success"></i>
+          <div class="mt-2 small text-muted">Completed Courses</div>
+          <div class="h4 fw-bold mt-1">{{ completed_courses_count }}</div>
+        </div>
+      </div>
+    </div>
 
-    {% if enrollments %}
-    <div class="row g-4">
-        {% for enroll in enrollments %}
-        <div class="col-md-4">
-            <div class="card card-hover shadow-sm h-100 rounded-4">
-                {% if enroll.course.image %}
-                <img src="{{ enroll.course.image.url }}" class="card-img-top" style="height:180px;object-fit:cover;border-radius:15px 15px 0 0;">
-                {% else %}
-                <img src="{% static 'images/default-course.jpg' %}" class="card-img-top" style="height:180px;object-fit:cover;border-radius:15px 15px 0 0;">
-                {% endif %}
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title fw-bold">{{ enroll.course.title }}</h5>
-                    <p class="card-text text-muted flex-grow-1">{{ enroll.course.description|truncatewords:20 }}</p>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'learn_course' enroll.course.id %}" class="btn btn-primary">
-                            {% if request.LANGUAGE_CODE == 'ar' %}
-                                أكمل الكورس
-                            {% else %}
-                                Continue Course
-                            {% endif %}
-                        </a>
-                        <a href="{% url 'courses:course_detail' enroll.course.id %}" class="btn btn-outline-secondary">
-                            {% if request.LANGUAGE_CODE == 'ar' %}
-                                عرض تفاصيل الكورس
-                            {% else %}
-                                View Details
-                            {% endif %}
-                        </a>
+    <div class="col-sm-6 col-md-3">
+      <div class="card stat-card h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-clock-history fs-1 text-warning"></i>
+          <div class="mt-2 small text-muted">Active Lectures</div>
+          <div class="h4 fw-bold mt-1">{{ lecture_progress.count }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+      <div class="card stat-card h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-bar-chart-line fs-1 text-info"></i>
+          <div class="mt-2 small text-muted">Average Progress</div>
+          <div class="h4 fw-bold mt-1">{{ avg_progress|default:"0" }}%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="row">
+
+    <!-- Courses -->
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Enrolled Courses</h5>
+            <small class="text-muted">Showing {{ enrollments|length }} courses</small>
+          </div>
+
+          {% if enrollments %}
+          <div class="row g-3">
+            {% for enrollment in enrollments %}
+            {% with course=enrollment.course %}
+            <div class="col-md-6">
+              <div class="card course-card h-100">
+                <div class="row g-0 h-100">
+                  <div class="col-5">
+                    {% if course.thumbnail %}
+                    <img src="{{ course.thumbnail.url }}" class="img-fluid rounded-start h-100 object-cover">
+                    {% else %}
+                    <div class="placeholder-thumbnail d-flex align-items-center justify-content-center">
+                      <i class="bi bi-book fs-2"></i>
                     </div>
+                    {% endif %}
+                  </div>
+                  <div class="col-7">
+                    <div class="card-body d-flex flex-column h-100">
+                      <h6 class="card-title mb-1">{{ course.title }}</h6>
+                      <p class="text-muted small mb-2">{{ course.description|truncatechars:80 }}</p>
+
+                      {% with prog=progress_map|get_item:course.id %}
+                      <div class="progress mb-2" style="height:8px;">
+                        <div class="progress-bar" style="width: {{ prog }}%;"></div>
+                      </div>
+
+                      <div class="d-flex justify-content-between align-items-center mt-auto">
+                        <small class="text-muted">{{ prog }}% Completed</small>
+                        <div>
+                          <a href="{% url 'courses:learn_course' course.id %}" class="btn btn-sm btn-primary">Continue</a>
+
+                          <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-sm btn-outline-secondary">Details</a>
+                        </div>
+                      </div>
+                      {% endwith %}
+                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
+            {% endwith %}
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-4">
+            <p class="text-muted mb-3">You haven't enrolled in any courses yet.</p>
+            <a href="{% url 'courses:course_list' %}" class="btn btn-outline-primary">Browse Courses</a>
+          </div>
+          {% endif %}
         </div>
-        {% endfor %}
+      </div>
     </div>
-    {% else %}
-    <div class="alert alert-info text-center mt-4">
-        {% if request.LANGUAGE_CODE == 'ar' %}
-            لم تشترك بأي كورس بعد 🎓
-        {% else %}
-            You are not enrolled in any courses yet 🎓
-        {% endif %}
+
+    <!-- Right Column -->
+    <div class="col-lg-4 mb-4">
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Weekly Progress</h6>
+          <canvas id="progressChart" height="200"></canvas>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Recent Quiz Attempts</h6>
+          {% if quiz_attempts %}
+            <ul class="list-group">
+              {% for attempt in quiz_attempts|slice:":5" %}
+              <li class="list-group-item d-flex justify-content-between">
+                <div>{{ attempt.quiz.title }}<br><small class="text-muted">{{ attempt.started_at|date:"Y-m-d H:i" }}</small></div>
+                <strong>{{ attempt.score|floatformat:0 }}%</strong>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted small mb-0">No attempts yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Certificates</h6>
+          {% if certificates %}
+            <ul class="list-group">
+              {% for cert in certificates|slice:":5" %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ cert.module.title }}
+                <a href="{{ cert.certificate_file.url }}" class="btn btn-sm btn-outline-primary">Download</a>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted small mb-0">No certificates yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
     </div>
-    {% endif %}
+
+  </div>
 
 </div>
 
+<script src="{% static 'js/student_dashboard.js' %}"></script>
 {% endblock %}
