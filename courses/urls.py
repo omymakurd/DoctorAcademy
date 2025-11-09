@@ -27,6 +27,10 @@ urlpatterns = [
     path('quiz/<int:quiz_id>/result/<int:attempt_id>/', views.quiz_result, name='quiz-result'),
     path('quiz/<int:quiz_id>/history/', views.quiz_history, name='quiz-history'),
     path('quiz/<int:quiz_id>/autosave/<int:attempt_id>/', views.quiz_autosave, name='quiz-autosave'),
+    path('provider/courses/', views.course_provider_courses, name='course_provider_courses'),
+    path('provider/enrollments/', views.course_provider_enrollments, name='course_provider_enrollments'),
+    path('revenue/', views.course_provider_revenue, name='course_provider_revenue'),  # <- مهم
+
 ]
 
 

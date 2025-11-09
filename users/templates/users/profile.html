@@ -131,7 +131,7 @@
   {% elif user.role == 'admin' %}
     <a href="{% url 'admin:index' %}" class="btn btn-primary px-5 py-2">Back to Admin Dashboard</a>
   {% elif user.role == 'course_provider' %}
-    <a href="{% url 'course_provider:dashboard' %}" class="btn btn-primary px-5 py-2">Back to Dashboard</a>
+    <a href="{% url 'courses:course_provider_dashboard' %}" class="btn btn-primary px-5 py-2">Back to Dashboard</a>
   {% else %}
     <a href="/" class="btn btn-primary px-5 py-2">Back to Home</a>
   {% endif %}

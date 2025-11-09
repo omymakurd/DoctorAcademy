@@ -1,0 +1,42 @@
+:root{
+  --primary:#0056D2;
+  --accent:#FFA000;
+  --muted:#6c757d;
+  --card-radius:12px;
+}
+
+/* layout */
+#instructor-app { min-height: calc(100vh - 120px); }
+.sidebar {
+  width: 260px;
+  background: linear-gradient(180deg, #ffffff, #f1f6ff);
+  border-inline-start: 1px solid rgba(13,71,161,0.04);
+  display:flex;
+  flex-direction: column;
+  gap:12px;
+}
+#main { margin-left: 0; padding: 28px; }
+
+/* responsive */
+@media (max-width: 992px) {
+  .sidebar { position: fixed; left: -100%; top: 0; z-index: 1050; height:100vh; }
+  .sidebar.open { left:0; }
+}
+
+/* cards */
+.card { border-radius: var(--card-radius); }
+
+/* sidebar links */
+.nav-link { color: #0b2545; padding:12px 14px; border-radius:8px; margin:4px 0; }
+.nav-link.active-link, .nav-link:hover { background: rgba(0,86,210,0.08); border-inline-start: 4px solid var(--primary); color: var(--primary); }
+
+/* dark mode (toggle adds class on body) */
+body.dark-mode {
+  background: #071028;
+  color: #e8f0ff;
+}
+body.dark-mode .sidebar { background: #061427; color:#cfe6ff; border-inline-start-color: rgba(255,255,255,0.03); }
+body.dark-mode .card { background: #07203b; color:#dbeeff; box-shadow: none; }
+
+/* small utilities */
+.small-muted { color: var(--muted); }

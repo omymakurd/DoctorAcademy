@@ -475,3 +475,48 @@ def quiz_autosave(request, quiz_id, attempt_id):
         except Question.DoesNotExist:
             continue
     return JsonResponse({'status': 'ok'})
+@login_required
+def course_provider_courses(request):
+    # افتراضياً، نعرض الكورسات التي يمتلكها المستخدم الحالي
+    courses = Course.objects.filter(provider=request.user)
+    
+    context = {
+        'courses': courses
+    }
+    return render(request, 'course_provider_courses.html', context)
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import Course, Enrollment  # افترض أنك لديك نموذج Enrollment
+
+@login_required
+def course_provider_enrollments(request):
+    # جميع الطلاب المسجلين في كورسات هذا المحاضر
+    enrollments = Enrollment.objects.filter(course__provider=request.user)
+    
+    context = {
+        'enrollments': enrollments
+    }
+    return render(request, 'course_provider_enrollments.html', context)
+
+# courses/views.py
+from django.db.models import Sum, Count, Q
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from .models import Course
+
+@login_required
+def course_provider_revenue(request):
+    provider = request.user
+
+    courses = Course.objects.filter(provider=provider).annotate(
+        paid_enrollments=Count('enrollments', filter=Q(enrollments__paid=True)),
+        revenue=Sum('enrollments__course__price', filter=Q(enrollments__paid=True))
+    )
+
+    total_revenue = courses.aggregate(total=Sum('revenue'))['total'] or 0
+
+    context = {
+        'courses': courses,
+        'total_revenue': total_revenue,
+    }
+    return render(request, 'course_provider_revenue.html', context)
