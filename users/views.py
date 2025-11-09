@@ -87,7 +87,7 @@ def auth_view(request):
             # تحويل المستخدم حسب الدور
             login(request, user)
             if role == "instructor":
-                return redirect("instructor_dashboard")
+                return redirect("lectures:instructor_dashboard")
             elif role == "student":
                 return redirect("student_dashboard")
             elif role == "course_provider":

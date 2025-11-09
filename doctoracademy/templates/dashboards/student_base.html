@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <title>{% block title %}Student Dashboard{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     :root {
       --primary-color: #1565C0;
@@ -14,14 +17,18 @@
       --navbar-height: 70px;
       --sidebar-width: 230px;
     }
+
     body {
       margin: 0;
       background-color: var(--bg-color);
       font-family: 'Segoe UI', sans-serif;
     }
+
+    /* Navbar */
     .navbar {
       position: fixed;
       top: 0;
+      left: 0;
       width: 100%;
       height: var(--navbar-height);
       background-color: var(--primary-color);
@@ -30,8 +37,16 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 1.5rem;
-      z-index: 1000;
+      z-index: 2000;
     }
+
+    .navbar .menu-toggle {
+      font-size: 1.7rem;
+      cursor: pointer;
+      display: none; /* يظهر فقط من خلال media query */
+    }
+
+    /* Sidebar */
     .sidebar {
       position: fixed;
       top: var(--navbar-height);
@@ -41,7 +56,14 @@
       background-color: var(--primary-color);
       padding-top: 1rem;
       color: white;
+      transition: transform 0.3s ease;
+      z-index: 1500;
     }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
     .sidebar a {
       display: block;
       padding: 0.8rem 1.2rem;
@@ -49,35 +71,102 @@
       text-decoration: none;
       border-left: 4px solid transparent;
     }
+
     .sidebar a:hover {
       background-color: var(--secondary-color);
       border-left-color: var(--accent-color);
     }
+
+    /* Main Content */
     .main-content {
       margin-left: var(--sidebar-width);
       margin-top: var(--navbar-height);
       padding: 2rem;
+      transition: margin-left 0.3s ease;
+    }
+
+    /* Overlay for mobile */
+    .overlay {
+      position: fixed;
+      top: var(--navbar-height);
+      left: 0;
+      width: 100%;
+      height: calc(100vh - var(--navbar-height));
+      background-color: rgba(0,0,0,0.4);
+      z-index: 1400;
+      display: none;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 992px) {
+
+      .navbar .menu-toggle {
+        display: block;
+      }
+
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.show {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .overlay.show {
+        display: block;
+      }
     }
   </style>
+
   {% block extra_head %}{% endblock %}
 </head>
-
 <body>
+
+  <!-- Navbar -->
   <div class="navbar">
-    <h4>Student Dashboard</h4>
+    <div class="d-flex align-items-center gap-3">
+      <span class="menu-toggle text-white"><i class="bi bi-list"></i></span>
+      <h4 class="mb-0">Student Dashboard</h4>
+    </div>
     <a href="#" class="text-white">Logout</a>
   </div>
 
-  <div class="sidebar">
-    <h5 class="text-center">{{ user.username }}</h5>
+  <!-- Sidebar -->
+  <div class="sidebar hidden">
+    <h5 class="text-center mt-2 mb-3">{{ user.username }}</h5>
     <a href="#">My Courses</a>
     <a href="#">Progress</a>
     <a href="#">Certificates</a>
     <a href="#">Settings</a>
   </div>
 
+  <!-- Overlay -->
+  <div class="overlay"></div>
+
+  <!-- Main Content -->
   <div class="main-content">
     {% block content %}{% endblock %}
   </div>
+
+  <!-- JavaScript -->
+  <script>
+    const toggleBtn = document.querySelector('.menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.overlay');
+
+    function toggleSidebar() {
+      sidebar.classList.toggle('show');
+      sidebar.classList.toggle('hidden');
+      overlay.classList.toggle('show');
+    }
+
+    toggleBtn.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+  </script>
+
 </body>
 </html>

@@ -19,25 +19,205 @@
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="{% static 'css/course-provider-dashboard.css' %}">
-  
+
   <style>
+    :root {
+      --primary-color: #0D47A1;
+      --secondary-color: #1976D2;
+      --accent-color: #FFA000;
+      --bg-color: #f7f9fc;
+      --text-color: #0b2545;
+    }
+
     body {
       font-family: "Segoe UI", Tahoma, sans-serif;
-      background: #f7f9fc;
-      color: #0b2545;
+      background: var(--bg-color);
+      color: var(--text-color);
     }
-    .active-link {
-      font-weight: bold;
-      background-color: #e7f1ff;
+
+    /* ===== Layout ===== */
+    #course-provider-app {
+      display: flex;
+      flex-wrap: nowrap;
+    }
+
+    .sidebar {
+      width: 250px;
+      min-width: 250px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: white;
+      padding: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+      z-index: 9999;
+    }
+
+    /* Sidebar nav links */
+    .sidebar nav .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
       border-radius: 8px;
+      color: var(--text-color);
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar nav .nav-link:hover,
+    .sidebar nav .nav-link.active-link {
+      background-color: #e7f1ff;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .sidebar .text-center img {
+      width: 72px;
+      height: 72px;
+    }
+
+    /* Stats Cards */
+    .stats-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stats-card {
+      border-radius: 15px;
+      background: white;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stats-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .stats-card h5 {
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .stats-card p {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    /* Table responsive */
+    .table-container {
+      border-radius: 15px;
+      overflow-x: auto;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+
+    .table-container table th,
+    .table-container table td {
+      padding: 12px 15px;
+      text-align: left;
+    }
+
+    .table-container thead {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .table-container tbody tr:hover {
+      background-color: #f1f6ff;
+      cursor: pointer;
+    }
+
+    .badge-active {
+      background-color: var(--secondary-color);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+    }
+
+    .badge-inactive {
+      background-color: #ccc;
+      color: #333;
+      padding: 5px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+    }
+
+    /* ===== Mobile ===== */
+    @media (max-width: 992px) {
+      #course-provider-app {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: -260px;
+        height: 100vh;
+        width: 250px;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+      }
+
+      .sidebar.active {
+        left: 0;
+      }
+
+      #main {
+        order: 2;
+        padding: 1rem;
+        margin-left: 0;
+      }
+
+      .sidebar nav .nav-link {
+        text-align: center;
+      }
+
+      .sidebar .text-center img {
+        width: 60px;
+        height: 60px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .stats-card p {
+        font-size: 1.5rem;
+      }
+
+      .table-container table th,
+      .table-container table td {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+      }
+
+      .table-container .btn-sm {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+      }
     }
   </style>
+
   {% block extra_head %}{% endblock %}
 </head>
 <body>
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-light shadow-sm" style="background: linear-gradient(90deg,#ffffff 0%, #f1f6ff 100%);">
+  <nav class="navbar navbar-expand-lg navbar-light shadow-sm mb-3" style="background: linear-gradient(90deg,#ffffff 0%, #f1f6ff 100%);">
     <div class="container-fluid">
+      <!-- Sidebar toggle button for mobile -->
+      <button id="sidebarToggle" class="btn btn-outline-primary d-lg-none me-2">
+        <i class="bi bi-list"></i>
+      </button>
+
       <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
         <img src="{% static 'images/logo.png' %}" alt="logo" style="height:34px; margin-right:8px;">
       </a>
@@ -57,13 +237,14 @@
     </div>
   </nav>
 
+  <!-- App -->
   <div class="d-flex" id="course-provider-app">
     <!-- Sidebar -->
-    <aside id="sidebar" class="sidebar p-3 bg-white shadow-sm">
+    <aside id="sidebar" class="sidebar">
       <div class="text-center mb-3">
         <a href="{% url 'profile' %}" class="text-decoration-none text-dark">
           <img src="{% if user.instructor_profile.photo %}{{ user.instructor_profile.photo.url }}{% else %}{% static 'images/avatar-placeholder.png' %}{% endif %}"
-         alt="avatar" class="rounded-circle border" width="72" height="72">
+         alt="avatar" class="rounded-circle border">
           <h6 class="mt-2 mb-0">{{ user.get_full_name|default:user.username }}</h6>
         </a>
         <small class="text-muted d-block">{{ user.role|capfirst }}</small>
@@ -80,9 +261,6 @@
           <i class="bi bi-people me-2"></i> Enrollments
         </a>
         <a class="nav-link" href="{% url 'courses:course_provider_revenue' %}">
-  <i class="bi bi-wallet2 me-2"></i> Revenue
-</a>
-
           <i class="bi bi-wallet2 me-2"></i> Revenue
         </a>
         <a class="nav-link" href="{% url 'profile' %}">
@@ -96,7 +274,7 @@
     </aside>
 
     <!-- Main content -->
-    <main id="main" class="flex-grow-1 p-4">
+    <main id="main" class="flex-grow-1">
       <div class="container-fluid">
         {% block content %}{% endblock %}
       </div>
@@ -120,6 +298,20 @@
         document.body.classList.toggle('dark-mode');
         tbtn.querySelector('i').classList.toggle('bi-moon-fill');
         tbtn.querySelector('i').classList.toggle('bi-sun-fill');
+      });
+
+      // Sidebar toggle for mobile
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      const sidebar = document.getElementById('sidebar');
+      sidebarToggle?.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+      });
+
+      // Close sidebar when clicking outside on mobile
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 992 && !sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+          sidebar.classList.remove('active');
+        }
       });
     });
   </script>

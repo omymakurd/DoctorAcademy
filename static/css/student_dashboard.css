@@ -1,10 +1,53 @@
 /* student_dashboard.css */
-.stat-card { border-radius: 12px; }
-.course-card { border-radius: 10px; overflow: hidden; }
+
+/* Cards */
+.stat-card, .course-card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover, .course-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+/* Course Thumbnails */
 .object-cover { object-fit: cover; width:100%; height:100%; }
-.placeholder-thumbnail { height:100%; background:#f5f6f8; color:#9aa0a6; }
-.stat-card .card-body i { opacity:0.95; }
-.card.course-card { border:1px solid #f0f0f0; }
+.placeholder-thumbnail { 
+  height: 100%; 
+  background:#f5f6f8; 
+  color:#9aa0a6; 
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+}
+
+/* Stats Icons */
+.stat-card .card-body i { 
+  opacity:0.95; 
+  font-size: 2rem; 
+}
+
+/* Progress Bar */
+.progress { border-radius: 5px; overflow: hidden; height: 8px; }
+.progress-bar { transition: width 0.4s ease; }
+
+/* Responsive Grid Adjustments */
+@media (max-width: 992px) {
+  .course-card { margin-bottom: 15px; }
+  .stat-card .card-body { padding: 15px; }
+}
+
+@media (max-width: 768px) {
+  .object-cover { height: 140px; }
+  .course-card h6 { font-size: 0.95rem; }
+  .course-card p { font-size: 0.8rem; }
+}
+
 @media (max-width: 576px) {
-  .object-cover { height:120px; }
+  .object-cover { height: 120px; }
+  .stat-card .card-body { padding: 10px; }
+  .stat-card .card-body i { font-size: 1.5rem; }
+  .card-body h6 { font-size: 0.9rem; }
+  .btn { font-size: 0.85rem; padding: 0.3rem 0.6rem; }
 }

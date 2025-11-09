@@ -1,16 +1,30 @@
-// ملف خفيف لإعداد الرسوم وفلتر التاريخ
 document.addEventListener('DOMContentLoaded', function(){
-  // بيانات ابتدائية جلبها من template context عبر عناصر data-*
-  // إذا حبيت، يمكنك تغييرها لتأتي عبر AJAX Endpoints
+
+  // === Sidebar toggle for small screens ===
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+  sidebarToggle?.addEventListener('click', () => {
+    sidebar?.classList.toggle('open');
+  });
+
+  // === Theme toggle ===
+  const themeToggle = document.getElementById('themeToggle');
+  themeToggle?.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    themeToggle.querySelector('i')?.classList.toggle('bi-moon-fill');
+    themeToggle.querySelector('i')?.classList.toggle('bi-sun-fill');
+  });
+
+  // === AOS animations ===
+  if(window.AOS) AOS.init({ duration: 600, once: true });
+
+  // === Revenue Chart ===
   const revenueCtx = document.getElementById('revenueChart')?.getContext('2d');
+  const revenueLabels = window.revenue_labels || [];
+  const revenueData = window.revenue_data || [];
 
-  // data placeholders (if template passed arrays/update to fetch via ajax, adapt)
-  const revenueLabels = window.revenue_labels || {{ revenue_labels_json|default:"[]" }};
-  const revenueData = window.revenue_data || {{ revenue_data_json|default:"[]" }};
-
-  // create chart if canvas exists
   if(revenueCtx){
-    const revenueChart = new Chart(revenueCtx, {
+    new Chart(revenueCtx, {
       type: 'line',
       data: {
         labels: revenueLabels,
@@ -27,31 +41,23 @@ document.addEventListener('DOMContentLoaded', function(){
       options:{
         responsive:true,
         maintainAspectRatio:false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          y: { beginAtZero:true }
-        }
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero:true } }
       }
     });
   }
 
-  // filter range change (if you add an endpoint to update charts)
+  // === Filter range change ===
   const filterRange = document.getElementById('filterRange');
   if(filterRange){
     filterRange.addEventListener('change', function(){
-      // example: call AJAX to refresh revenue chart and top lectures
-      // fetch(`/lectures/api/instructor-stats/?days=${this.value}`)
-      //   .then(r=>r.json()).then(updateDashboardWith)
-      //   .catch(err=>console.error(err));
-      // for now show tiny feedback
       const val = this.value;
-      const btn = document.createElement('span');
-      btn.className = 'badge bg-light text-muted ms-2';
-      btn.innerText = 'تحديث...';
-      this.parentNode.appendChild(btn);
-      setTimeout(()=>btn.remove(), 700);
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-light text-muted ms-2';
+      badge.innerText = 'تحديث...';
+      this.parentNode.appendChild(badge);
+      setTimeout(()=>badge.remove(), 700);
     });
   }
+
 });

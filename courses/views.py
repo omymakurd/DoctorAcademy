@@ -82,7 +82,8 @@ def course_delete(request, pk):
         return HttpResponseForbidden("ليس لديك صلاحية حذف هذا الكورس.")
     if request.method == 'POST':
         course.delete()
-        return redirect('courses:provider-courses')
+        return redirect('courses:course_provider_courses')
+
     return render(request, 'course_confirm_delete.html', {'course': course})
 
 # Manage units for a course
