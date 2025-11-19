@@ -6,97 +6,120 @@
 <div class="container py-5">
 
     <!-- ===== Page Header ===== -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">{% trans "All Modules" %}</h2>
-        
-        <form method="get" class="d-flex" style="max-width: 350px;">
-            <input type="text" name="search" class="form-control me-2" 
+    <div class="text-center mb-5">
+        <h2 class="fw-bold display-6 text-primary">{% trans "All Modules" %}</h2>
+        <p class="text-muted">{% trans "Browse medical modules, filter by price, type, system, and discipline." %}</p>
+    </div>
+
+    <!-- ===== Search Bar ===== -->
+    <div class="d-flex justify-content-center mb-4">
+        <form method="get" class="d-flex w-100" style="max-width: 450px;">
+            <input type="text" name="search" class="form-control form-control-lg me-2"
                    placeholder="{% trans 'Search modules...' %}" value="{{ request.GET.search }}">
-            <button class="btn btn-primary">{% trans "Search" %}</button>
+            <button class="btn btn-primary btn-lg">
+                <i class="bi bi-search"></i> {% trans "Search" %}
+            </button>
         </form>
     </div>
 
     <!-- ===== Filters Section ===== -->
-    <form method="get" class="mb-4">
-        <div class="row g-3">
+    <div class="card shadow-sm border-0 p-4 mb-5 rounded-4">
+        <h5 class="fw-bold mb-3">{% trans "Filters" %}</h5>
+        <form method="get" id="filters-form">
 
-            <!-- Price Filter -->
-            <div class="col-md-3">
-                <select name="price" class="form-select">
-                    <option value="">{% trans "All Prices" %}</option>
-                    <option value="free" {% if request.GET.price == 'free' %}selected{% endif %}>{% trans "Free" %}</option>
-                    <option value="paid" {% if request.GET.price == 'paid' %}selected{% endif %}>{% trans "Paid" %}</option>
-                </select>
+            <div class="row g-3">
+
+                <!-- Price Filter -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">{% trans "Price" %}</label>
+                    <select name="price" class="form-select">
+                        <option value="">{% trans "All Prices" %}</option>
+                        <option value="free" {% if request.GET.price == 'free' %}selected{% endif %}>{% trans "Free" %}</option>
+                        <option value="paid" {% if request.GET.price == 'paid' %}selected{% endif %}>{% trans "Paid" %}</option>
+                    </select>
+                </div>
+
+                <!-- Type Filter -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">{% trans "Type" %}</label>
+                    <select name="type" id="type-filter" class="form-select">
+                        <option value="">{% trans "All Types" %}</option>
+                        <option value="basic" {% if request.GET.type == 'basic' %}selected{% endif %}>{% trans "Basic Sciences" %}</option>
+                        <option value="clinical" {% if request.GET.type == 'clinical' %}selected{% endif %}>{% trans "Clinical Sciences" %}</option>
+                    </select>
+                </div>
+
+                <!-- System Filter -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">{% trans "System" %}</label>
+                    <select name="system" id="system-filter" class="form-select">
+                        <option value="">{% trans "All Systems" %}</option>
+                        {% for sys in basic_systems %}
+                            <option value="{{ sys.id }}" data-type="basic" {% if request.GET.system == sys.id|stringformat:"s" %}selected{% endif %}>
+                                🔬 {{ sys.name }}
+                            </option>
+                        {% endfor %}
+                        {% for sys in clinical_systems %}
+                            <option value="{{ sys.id }}" data-type="clinical" {% if request.GET.system == sys.id|stringformat:"s" %}selected{% endif %}>
+                                🩺 {{ sys.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Discipline Filter -->
+                <div class="col-md-3" id="discipline-wrapper">
+                    <label class="form-label small fw-bold">{% trans "Discipline" %}</label>
+                    <select name="discipline" id="discipline-filter" class="form-select">
+                        <option value="">{% trans "All Disciplines" %}</option>
+                        {% for dis in disciplines %}
+                            <option value="{{ dis.id }}" data-system="{{ dis.system.id }}"
+                                {% if request.GET.discipline == dis.id|stringformat:"s" %}selected{% endif %}>
+                                🧬 {{ dis.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
             </div>
 
-            <!-- System Type -->
-            <div class="col-md-3">
-                <select name="type" class="form-select">
-                    <option value="">{% trans "All Types" %}</option>
-                    <option value="basic" {% if request.GET.type == 'basic' %}selected{% endif %}>{% trans "Basic Sciences" %}</option>
-                    <option value="clinical" {% if request.GET.type == 'clinical' %}selected{% endif %}>{% trans "Clinical Sciences" %}</option>
-                </select>
+            <div class="mt-4 text-end">
+                <button class="btn btn-dark px-4 py-2">
+                    <i class="bi bi-funnel"></i> {% trans "Apply Filters" %}
+                </button>
             </div>
-
-            <!-- System Filter -->
-            <div class="col-md-3">
-                <select name="system" class="form-select">
-                    <option value="">{% trans "All Systems" %}</option>
-
-                    {% for sys in basic_systems %}
-                        <option value="{{ sys.id }}" {% if request.GET.system == sys.id|stringformat:"s" %}selected{% endif %}>
-                            🔬 {{ sys.name }}
-                        </option>
-                    {% endfor %}
-
-                    {% for sys in clinical_systems %}
-                        <option value="{{ sys.id }}" {% if request.GET.system == sys.id|stringformat:"s" %}selected{% endif %}>
-                            🩺 {{ sys.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- Sorting -->
-            <div class="col-md-3">
-                <select name="sort" class="form-select">
-                    <option value="">{% trans "Sort By" %}</option>
-                    <option value="latest" {% if request.GET.sort == 'latest' %}selected{% endif %}>{% trans "Newest" %}</option>
-                    <option value="oldest" {% if request.GET.sort == 'oldest' %}selected{% endif %}>{% trans "Oldest" %}</option>
-                    <option value="price_low" {% if request.GET.sort == 'price_low' %}selected{% endif %}>{% trans "Price: Low to High" %}</option>
-                    <option value="price_high" {% if request.GET.sort == 'price_high' %}selected{% endif %}>{% trans "Price: High to Low" %}</option>
-                </select>
-            </div>
-
-        </div>
-
-        <div class="mt-3 text-end">
-            <button class="btn btn-dark">{% trans "Apply Filters" %}</button>
-        </div>
-    </form>
+        </form>
+    </div>
 
     <!-- ===== Module Cards ===== -->
     <div class="row">
         {% for module in modules %}
         <div class="col-md-4 col-lg-3 mb-4">
-            <div class="card shadow-sm h-100">
+            <div class="card shadow-sm border-0 rounded-4 h-100 overflow-hidden">
 
                 {% if module.thumbnail %}
-                    <img src="{{ module.thumbnail.url }}" class="card-img-top" style="height:180px; object-fit:cover;">
+                    <img src="{{ module.thumbnail.url }}" class="card-img-top"
+                         style="height:180px; object-fit:cover;">
                 {% else %}
-                    <img src="{% static 'img/no-image.jpg' %}" class="card-img-top" style="height:180px; object-fit:cover;">
+                    <img src="{% static 'img/no-image.jpg' %}" class="card-img-top"
+                         style="height:180px; object-fit:cover;">
                 {% endif %}
 
                 <div class="card-body d-flex flex-column">
-                    <h5 class="fw-bold">{{ module.title }}</h5>
-                    <p class="text-muted small">{{ module.instructor.username }}</p>
-                    <p class="small text-truncate">{{ module.description }}</p>
+                    <h5 class="fw-bold mb-1">{{ module.title }}</h5>
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-person-circle"></i> {{ module.instructor.username }}
+                    </p>
+
+                    <p class="small text-muted mb-3" style="min-height: 45px;">
+                        {{ module.description|truncatewords:15 }}
+                    </p>
 
                     <div class="mt-auto d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-primary">
-                            {{ module.price }}$
-                        </span>
-                        <a href="{% url 'lectures:module_detail' module.id %}" class="btn btn-outline-primary btn-sm">
+                        <span class="fw-bold text-primary">{{ module.price }}$</span>
+
+                        <a href="{% url 'lectures:module_detail' module.id %}" 
+                           class="btn btn-outline-primary btn-sm rounded-pill px-3">
                             {% trans "View" %}
                         </a>
                     </div>
@@ -105,9 +128,64 @@
             </div>
         </div>
         {% empty %}
-        <p class="text-muted">{% trans "No modules available yet." %}</p>
+        <div class="text-center py-5">
+            <h5 class="text-muted">{% trans "No modules available yet." %}</h5>
+        </div>
         {% endfor %}
     </div>
 
 </div>
+
+<!-- ===== JS to Handle Dynamic Filters ===== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeFilter = document.getElementById('type-filter');
+    const disciplineWrapper = document.getElementById('discipline-wrapper');
+    const systemFilter = document.getElementById('system-filter');
+    const disciplineFilter = document.getElementById('discipline-filter');
+
+    function updateFilters() {
+        const selectedType = typeFilter.value;
+        const selectedSystem = systemFilter.value;
+
+        // Show/hide discipline filter based on type
+        if(selectedType === 'basic') {
+            disciplineWrapper.style.display = 'block';
+        } else {
+            disciplineWrapper.style.display = 'none';
+            disciplineFilter.selectedIndex = 0;
+        }
+
+        // Filter system options based on type
+        Array.from(systemFilter.options).forEach(opt => {
+            if(opt.value === "") return;
+            if(opt.dataset.type === selectedType || selectedType === "") {
+                opt.style.display = 'block';
+            } else {
+                opt.style.display = 'none';
+                if(opt.selected) opt.selected = false;
+            }
+        });
+
+        // Filter discipline options based on system
+        Array.from(disciplineFilter.options).forEach(opt => {
+            if(opt.value === "") return; // Keep "All Disciplines"
+            if(opt.dataset.system === selectedSystem || selectedSystem === "") {
+                opt.style.display = 'block';
+            } else {
+                opt.style.display = 'none';
+                if(opt.selected) opt.selected = false;
+            }
+        });
+    }
+
+    // Initial update on page load
+    updateFilters();
+
+    // Update on change
+    typeFilter.addEventListener('change', updateFilters);
+    systemFilter.addEventListener('change', updateFilters);
+});
+</script>
+
 {% endblock %}

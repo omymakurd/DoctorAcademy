@@ -375,6 +375,9 @@ def create_zoom_meeting_for_lecture(request, lecture_id):
 from django.shortcuts import render, get_object_or_404
 from .models import Module, BasicSystem, ClinicalSystem
 
+from django.shortcuts import render
+from .models import Module, BasicSystem, ClinicalSystem, Discipline
+
 def module_list(request):
     modules = Module.objects.filter(status__in=["approved", "published"])
 
@@ -402,6 +405,15 @@ def module_list(request):
     if system_id:
         modules = modules.filter(basic_system_id=system_id) | modules.filter(clinical_system_id=system_id)
 
+    # ----- Filter by Discipline -----
+    discipline_id = request.GET.get("discipline")
+    if discipline_id:
+        # فلترة حسب النوع لأن الموديل لا يحتوي على حقل discipline مباشر
+        if system_type == "basic":
+            modules = modules.filter(basic_system_id=discipline_id)
+        elif system_type == "clinical":
+            modules = modules.filter(clinical_system_id=discipline_id)
+
     # ----- Featured -----
     featured = request.GET.get("featured")
     if featured == "true":
@@ -418,15 +430,17 @@ def module_list(request):
     elif sort == "price_high":
         modules = modules.order_by("-price")
 
+    # ----- Dropdown data -----
     basic_systems = BasicSystem.objects.all()
     clinical_systems = ClinicalSystem.objects.all()
+    disciplines = Discipline.objects.all()
 
     return render(request, "module_list.html", {
         "modules": modules,
         "basic_systems": basic_systems,
         "clinical_systems": clinical_systems,
+        "disciplines": disciplines,
     })
-
 
 from django.shortcuts import render, get_object_or_404
 from .models import Module

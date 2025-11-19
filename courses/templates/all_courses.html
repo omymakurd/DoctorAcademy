@@ -4,12 +4,20 @@
 {% block content %}
 <div class="container py-4">
 
+    <!-- Page Title -->
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-primary">🎓 Available Courses</h2>
+        <p class="text-muted">Explore our medical courses and start learning today</p>
+    </div>
+
     <!-- Filters Bar -->
-    <form method="get" class="row g-3 mb-4">
+    <form method="get" class="row g-3 mb-4 bg-white p-3 rounded shadow-sm">
 
         <!-- Search -->
         <div class="col-md-4">
-            <input type="text" name="search" class="form-control" placeholder="Search courses..." value="{{ request.GET.search }}">
+            <input type="text" name="search" class="form-control"
+                   placeholder="Search courses..."
+                   value="{{ request.GET.search }}">
         </div>
 
         <!-- Price -->
@@ -42,35 +50,48 @@
     <div class="row">
         {% for course in courses %}
         <div class="col-md-4 mb-4">
-            <div class="card shadow-sm border-0 h-100">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
 
                 <div class="position-relative">
                     {% if course.thumbnail %}
-                        <img src="{{ course.thumbnail.url }}" class="card-img-top" style="height:200px; object-fit:cover;">
+                        <img src="{{ course.thumbnail.url }}" class="card-img-top rounded-top-4"
+                             style="height:220px; object-fit:cover;">
                     {% else %}
-                        <img src="{% static 'img/no-image.jpg' %}" class="card-img-top" style="height:200px; object-fit:cover;">
+                        <img src="{% static 'img/no-image.jpg' %}" class="card-img-top rounded-top-4"
+                             style="height:220px; object-fit:cover;">
                     {% endif %}
 
                     {% if course.featured %}
-                    <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">Featured</span>
+                    <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2 shadow">
+                        ⭐ Featured
+                    </span>
                     {% endif %}
                 </div>
 
                 <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">{{ course.title }}</h5>
-                    <p class="text-muted small">{{ course.provider.username }}</p>
-                    <p class="text-muted">{{ course.description|truncatewords:18 }}</p>
+                    <h5 class="card-title fw-bold">{{ course.title }}</h5>
+                    <p class="text-muted small mb-1">By {{ course.provider.username }}</p>
+                    <p class="text-muted small">{{ course.description|truncatewords:18 }}</p>
 
                     <div class="mt-auto">
-                        <p class="fw-bold text-primary mb-2">{{ course.price }}$</p>
-                        <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-outline-primary w-100">View Course</a>
+                        <p class="fw-bold text-primary mb-2">
+                            {% if course.price == 0 %}
+                                Free
+                            {% else %}
+                                {{ course.price }}$
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'courses:course_detail' course.id %}"
+                           class="btn btn-outline-primary w-100 rounded-pill">
+                           View Course
+                        </a>
                     </div>
                 </div>
 
             </div>
         </div>
         {% empty %}
-        <p class="text-center text-muted">No courses found.</p>
+        <p class="text-center text-muted mt-5">No courses found.</p>
         {% endfor %}
     </div>
 

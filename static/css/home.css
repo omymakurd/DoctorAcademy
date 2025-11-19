@@ -224,6 +224,49 @@ footer hr { border-color: rgba(255,255,255,0.2); }
 }
 .footer-modern .social-links a:hover { color: #fff; transform: translateY(-2px); }
 
+/* ===== Buttons ===== */
+#logo-img {
+  transition: opacity 0.3s ease;
+}
+.buy-btn {
+  background-color: var(--accent-color);
+  color: white;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.buy-btn:hover {
+  background-color: var(--secondary-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+.btn-accent {
+  background-color: var(--accent-color);
+  color: white;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.btn-accent:hover {
+  background-color: #e6851f;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+.btn-accent-pill {
+  background-color: var(--accent-color);
+  color: white;
+  border-radius: 50px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  transition: all 0.3s ease;
+}
+.btn-accent-pill:hover {
+  background-color: #e6851f;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 992px) {
   .hero-content h1 { font-size: 2.5rem; }
@@ -235,61 +278,60 @@ footer hr { border-color: rgba(255,255,255,0.2); }
   .hero-content p { font-size: 1rem; }
   .hero-content { padding: 20px 25px; }
   .card img { height: 150px; }
-}
-#logo-img {
-  transition: opacity 0.3s ease;
-}
-.buy-btn {
-  background-color: var(--accent-color);
-  color: white; /* نص أبيض ليكون واضح */
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
 
-.buy-btn:hover {
-  background-color: var(--secondary-color); /* أزرق أفتح على البرتقالي */
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
-}
-.btn-accent {
-  background-color: var(--accent-color);
-  color: white;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-.btn-accent:hover {
-  background-color: var(--secondary-color); /* أزرق للـ hover */
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
-}
-.btn-accent {
-  background-color: var(--accent-color);
-  color: white;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
+  /* Navbar Mobile Adjustments */
+  .navbar-scroll .navbar-collapse {
+    background-color: rgba(33, 32, 32, 0.85);
+    position: absolute;
+    top: var(--navbar-height);
+    left: 0;
+    width: 100%;
+    padding: 1rem 0;
+    border-radius: 0 0 12px 12px;
+  }
 
-.btn-accent:hover {
-  background-color: #e6851f; /* أغمق شوي عند hover */
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-}
-.btn-accent-pill {
-  background-color: var(--accent-color);
-  color: white;
-  border-radius: 50px; /* نفس تأثير rounded-pill */
-  padding-left: 1rem;  /* يعادل px-3 */
-  padding-right: 1rem;
-  transition: all 0.3s ease;
-}
+  .navbar-scroll .navbar-collapse.show {
+    display: block !important;
+  }
 
-.btn-accent-pill:hover {
-  background-color: #e6851f; /* أغمق شوي عند hover */
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-}
+  .navbar-scroll .navbar-nav {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+  }
 
+  .navbar-scroll .nav-link {
+    color: white !important;
+    font-size: 1.1rem;
+    text-align: center;
+    padding: 0.5rem 1rem;
+    width: 100%;
+  }
+
+  .navbar-scroll .nav-link:hover {
+    background-color: rgba(240, 228, 228, 0.1);
+    border-radius: 8px;
+  }
+
+  .navbar-scroll .dropdown-menu {
+    position: static;
+    float: none;
+    background-color: rgba(0, 0, 0, 0.9);
+    border: none;
+    box-shadow: none;
+    width: 90%;
+    margin: 0.5rem auto;
+  }
+
+  .navbar-scroll .dropdown-menu a {
+    color: white !important;
+    text-align: center;
+  }
+
+  .navbar-scroll .btn-accent {
+    width: 80%;
+    margin: 0.5rem auto;
+    display: block;
+    text-align: center;
+  }
+}
