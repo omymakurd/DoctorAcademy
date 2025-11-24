@@ -32,5 +32,7 @@ urlpatterns = [
 
     path('lecture/<str:lecture_type>/<int:lecture_id>/learn/', views.lecture_learning_view, name='lecture_learning'),
     path('instructor/lecture/<str:lecture_type>/<int:lecture_id>/quiz/add_page/', views.add_lecture_quiz_page, name='add_lecture_quiz_page'),
+    path('module/edit/<int:pk>/', views.edit_module_modal, name='edit_module_modal'),
+    path('module/manage/<int:module_id>/', views.module_manage, name='module_manage'),
 
     ]

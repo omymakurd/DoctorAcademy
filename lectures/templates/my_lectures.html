@@ -121,7 +121,12 @@
                     <div class="dropdown">
                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Manage</button>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
-                            <li><a href="{% url 'lectures:module_detail' module.id %}" class="dropdown-item">View Module</a></li>
+                            <li>
+    <a href="{% url 'lectures:module_manage' module.id %}" class="dropdown-item">
+        Manage Module
+    </a>
+</li>
+
                             {% if module.basic_system %}
 <li><a href="{% url 'lectures:add_basic_lecture' module.id %}" class="dropdown-item">+ Add Basic Lecture</a></li>
 {% endif %}
@@ -130,7 +135,15 @@
 <li><a href="{% url 'lectures:add_clinical_lecture' module.id %}" class="dropdown-item">Add Clinical Lecture</a></li>
 {% endif %}
                             
-                            <li><a href="{% url 'lectures:edit_module' module.id %}" class="dropdown-item">Edit Module</a></li>
+                            <li><a href="#" 
+   class="dropdown-item edit-module-btn"
+   data-id="{{ module.id }}"
+   data-bs-toggle="modal"
+   data-bs-target="#editModuleModal">
+   Edit Module
+</a>
+
+</li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a href="{% url 'lectures:delete_module' module.id %}" class="dropdown-item text-danger">Delete</a></li>
                         </ul>
@@ -154,5 +167,42 @@
     <a href="{% url 'lectures:module_wizard' %}" class="btn btn-primary">Create your first module</a>
 </div>
 {% endif %}
+<!-- Edit Module Modal -->
+<div class="modal fade" id="editModuleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content rounded-4">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Module</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body" id="editModuleContent">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.querySelectorAll('.edit-module-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const moduleId = this.dataset.id;
+        const modalBody = document.getElementById('editModuleContent');
+
+        modalBody.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary"></div>
+            </div>
+        `;
+
+        fetch(`/lectures/module/edit/${moduleId}/`)
+            .then(response => response.text())
+            .then(html => {
+                modalBody.innerHTML = html;
+            });
+    });
+});
+</script>
 
 {% endblock %}

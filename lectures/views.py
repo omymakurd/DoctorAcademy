@@ -506,18 +506,45 @@ from .forms import ModuleForm
 
 @login_required
 def edit_module(request, module_id):
-    module = get_object_or_404(Module, id=module_id, instructor=request.user)
+    module = get_object_or_404(Module, id=module_id)
 
     if request.method == "POST":
-        form = ModuleForm(request.POST, request.FILES, instance=module)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Module updated successfully ✅")
-            return redirect('lectures:my_lectures')
-    else:
-        form = ModuleForm(instance=module)
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        price = request.POST.get('price')
+        total_duration = request.POST.get('total_duration_minutes')
+        basic_system_id = request.POST.get('basic_system')
+        clinical_system_id = request.POST.get('clinical_system')
+        thumbnail = request.FILES.get('thumbnail')
 
-    return render(request, "edit_module.html", {"form": form, "module": module})
+        # تحديث البيانات
+        module.title = title
+        module.description = description
+        module.price = price
+        module.total_duration_minutes = total_duration
+
+        # تحديث الأنظمة
+        if basic_system_id:
+            module.basic_system = BasicSystem.objects.get(id=basic_system_id)
+            module.clinical_system = None  # تعطيل الآخر
+        elif clinical_system_id:
+            module.clinical_system = ClinicalSystem.objects.get(id=clinical_system_id)
+            module.basic_system = None  # تعطيل الآخر
+        else:
+            module.basic_system = None
+            module.clinical_system = None
+
+        # تحديث الصورة إذا تم رفعها
+        if thumbnail:
+            module.thumbnail = thumbnail
+
+        module.save()  # ✅ هذا هو السطر الذي يحفظ التعديلات
+
+        messages.success(request, "Module updated successfully!")
+        return redirect('lectures:module_manage', module_id=module.id)
+
+    # لو أحد دخل بالـ GET نعيده للصفحة الأساسية
+    return redirect('lectures:module_manage', module_id=module.id)
 
 @login_required
 def delete_module(request, module_id):
@@ -877,3 +904,66 @@ def add_lecture_quiz_page(request, lecture_type, lecture_id):
         'lecture': lecture
     })
 
+from django.shortcuts import get_object_or_404, render
+from .forms import ModuleForm
+from .models import Module
+@login_required
+def edit_module_modal(request, pk):
+    module = get_object_or_404(Module, pk=pk)
+
+    if request.method == 'POST':
+        form = ModuleForm(request.POST, request.FILES, instance=module)
+        if form.is_valid():
+            form.save()
+            return render(request, 'partials/edit_module_modal.html', {
+                'form': form,
+                'module': module,
+                'success': True
+            })
+    else:
+        form = ModuleForm(instance=module)
+
+    return render(request, 'partials/edit_module_modal.html', {
+        'form': form,
+        'module': module
+    })
+
+from django.shortcuts import render, get_object_or_404
+from .models import Module, BasicLecture, ClinicalLecture, Quiz, Certificate, ModuleEnrollment
+
+
+@login_required
+def module_manage(request, module_id):
+    module = get_object_or_404(Module, id=module_id)
+
+    basic_lectures = module.basiclectures.all()  # related_name = 'basiclectures'
+    clinical_lectures = module.clinicallectures.all()  # related_name = 'clinicallectures'
+    
+    # كل الكويزات
+    quizzes = Quiz.objects.filter(
+        basic_lecture__in=basic_lectures
+    ) | Quiz.objects.filter(
+        clinical_lecture__in=clinical_lectures
+    )
+
+    # الطلاب المسجلين
+    enrollments = ModuleEnrollment.objects.filter(module=module)
+
+    # الشهادات
+    certificates = module.certificates.all()
+
+    # قائمة الأنظمة لملأ الـ select
+    basic_systems = BasicSystem.objects.all()
+    clinical_systems = ClinicalSystem.objects.all()
+
+    context = {
+        'module': module,
+        'basic_lectures': basic_lectures,
+        'clinical_lectures': clinical_lectures,
+        'quizzes': quizzes,
+        'enrollments': enrollments,
+        'certificates': certificates,
+        'basic_systems': basic_systems,      # ✅ أضفتها
+        'clinical_systems': clinical_systems, # ✅ أضفتها
+    }
+    return render(request, 'model_details_edit.html', context)

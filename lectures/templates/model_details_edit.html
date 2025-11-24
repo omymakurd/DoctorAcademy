@@ -1,0 +1,241 @@
+{% extends "dashboards/instructor_base.html" %}
+{% load static %}
+
+{% block title %}Manage Module{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ module.title }}</h2>
+        <a href="{% url 'lectures:my_lectures' %}" class="btn btn-outline-secondary">Back</a>
+    </div>
+
+    <!-- معلومات المودل مع الصورة بجانب البيانات -->
+    <div class="card mb-4">
+        <div class="card-header fw-bold">Module Information</div>
+        <div class="card-body">
+            <div class="row">
+                <!-- عمود البيانات -->
+                <div class="col-md-8">
+                    <p><strong>Description:</strong> {{ module.description }}</p>
+                    <p><strong>Price:</strong> {{ module.price }} EGP</p>
+                    <p><strong>Status:</strong> {{ module.get_status_display }}</p>
+
+                    <p><strong>Basic System:</strong> 
+                        {% if module.basic_system %}
+                            {{ module.basic_system.name }}
+                        {% else %}
+                            None
+                        {% endif %}
+                    </p>
+
+                    <p><strong>Clinical System:</strong> 
+                        {% if module.clinical_system %}
+                            {{ module.clinical_system.name }}
+                        {% else %}
+                            None
+                        {% endif %}
+                    </p>
+
+                    <p><strong>Total Duration:</strong> {{ module.total_duration_minutes }} minutes</p>
+
+                    <!-- زر فتح Modal -->
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModuleModal">
+                        Edit Module Info
+                    </button>
+                </div>
+
+                <!-- عمود الصورة -->
+                {% if module.thumbnail %}
+                <div class="col-md-4 d-flex align-items-center justify-content-center">
+                    <img src="{{ module.thumbnail.url }}" alt="{{ module.title }}" class="img-fluid rounded" style="max-height: 200px;">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal لتعديل المودل -->
+<div class="modal fade" id="editModuleModal" tabindex="-1" aria-labelledby="editModuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'lectures:edit_module' module.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModuleModalLabel">Edit Module</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- عمود الفورم -->
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="title" name="title" value="{{ module.title }}" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3">{{ module.description }}</textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price (EGP)</label>
+                                <input type="number" class="form-control" id="price" name="price" value="{{ module.price }}" step="0.01" required>
+                            </div>
+
+                            <!-- Status للعرض فقط -->
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <input type="text" class="form-control" value="{{ module.get_status_display }}" readonly>
+                                <small class="text-muted">Status can only be changed by admin.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="total_duration_minutes" class="form-label">Total Duration (minutes)</label>
+                                <input type="number" class="form-control" id="total_duration_minutes" name="total_duration_minutes" value="{{ module.total_duration_minutes }}">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="basic_system" class="form-label">Basic System</label>
+                                <select class="form-select" id="basic_system" name="basic_system">
+                                    <option value="">-- None --</option>
+                                    {% for system in basic_systems %}
+                                        <option value="{{ system.id }}" {% if module.basic_system and module.basic_system.id == system.id %}selected{% endif %}>{{ system.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="clinical_system" class="form-label">Clinical System</label>
+                                <select class="form-select" id="clinical_system" name="clinical_system">
+                                    <option value="">-- None --</option>
+                                    {% for system in clinical_systems %}
+                                        <option value="{{ system.id }}" {% if module.clinical_system and module.clinical_system.id == system.id %}selected{% endif %}>{{ system.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="thumbnail" class="form-label">Thumbnail</label>
+                                <input type="file" class="form-control" id="thumbnail" name="thumbnail">
+                                {% if module.thumbnail %}
+                                    <small class="text-muted">Current: {{ module.thumbnail.name }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- عمود الصورة -->
+                        <div class="col-md-4 d-flex align-items-center justify-content-center">
+                            {% if module.thumbnail %}
+                                <img src="{{ module.thumbnail.url }}" alt="{{ module.title }}" class="img-fluid rounded" style="max-height: 200px;">
+                            {% else %}
+                                <div class="text-center text-muted">
+                                    <small>No thumbnail</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JS لتعطيل النظام الآخر عند الاختيار -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const basicSelect = document.getElementById('basic_system');
+    const clinicalSelect = document.getElementById('clinical_system');
+
+    function toggleSystems() {
+        if (basicSelect.value) {
+            clinicalSelect.disabled = true;
+        } else {
+            clinicalSelect.disabled = false;
+        }
+
+        if (clinicalSelect.value) {
+            basicSelect.disabled = true;
+        } else {
+            basicSelect.disabled = false;
+        }
+    }
+
+    basicSelect.addEventListener('change', toggleSystems);
+    clinicalSelect.addEventListener('change', toggleSystems);
+
+    // تشغيل عند تحميل المودال
+    toggleSystems();
+});
+</script>
+
+
+    <!-- إدارة المحاضرات -->
+    <div class="mb-4">
+        <h4>Lectures</h4>
+
+        <div class="mb-3">
+            {% if module.basic_system %}
+            <a href="{% url 'lectures:add_basic_lecture' module.id %}" class="btn btn-success">
+                + Add Basic Lecture
+            </a>
+            {% endif %}
+
+            {% if module.clinical_system %}
+            <a href="{% url 'lectures:add_clinical_lecture' module.id %}" class="btn btn-warning">
+                + Add Clinical Lecture
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            {% for lec in basic_lectures %}
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6>{{ lec.title }}</h6>
+                        <small class="text-muted">Basic</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% for lec in clinical_lectures %}
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6>{{ lec.title }}</h6>
+                        <small class="text-muted">Clinical</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- إدارة الكويزات -->
+    <div class="mb-4">
+        <h4>Quizzes</h4>
+        <a href="{% url 'lectures:add_quiz' module.id %}" class="btn btn-info">
+            + Add Quiz
+        </a>
+    </div>
+
+    <!-- إدارة Case Studies -->
+    <div class="mb-4">
+        <h4>Case Studies</h4>
+        <a href="{% url 'lectures:add_case_study' module.id %}" class="btn btn-dark">
+            + Add Case Study
+        </a>
+    </div>
+
+</div>
+{% endblock %}

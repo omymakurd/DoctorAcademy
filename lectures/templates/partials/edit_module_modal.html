@@ -1,0 +1,50 @@
+{% if success %}
+<div class="alert alert-success">Module updated successfully ✅</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Module Title</label>
+            {{ form.title }}
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Price (EGP)</label>
+            {{ form.price }}
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Basic System</label>
+        {{ form.basic_system }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Clinical System</label>
+        {{ form.clinical_system }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Thumbnail</label>
+        {{ form.thumbnail }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Description</label>
+        {{ form.description }}
+    </div>
+
+    <div class="form-check mb-3">
+        {{ form.is_featured }}
+        <label class="form-check-label">Featured Module</label>
+    </div>
+
+    <div class="text-end mt-4">
+        <button type="submit" class="btn btn-primary px-4">
+            Save Changes
+        </button>
+    </div>
+</form>
