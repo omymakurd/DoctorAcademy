@@ -34,5 +34,11 @@ urlpatterns = [
     path('instructor/lecture/<str:lecture_type>/<int:lecture_id>/quiz/add_page/', views.add_lecture_quiz_page, name='add_lecture_quiz_page'),
     path('module/edit/<int:pk>/', views.edit_module_modal, name='edit_module_modal'),
     path('module/manage/<int:module_id>/', views.module_manage, name='module_manage'),
+    path('module/<int:module_id>/add-lecture-modal/', views.add_lecture_modal, name='add_lecture_modal'),
+    path('module/<int:module_id>/save-lecture-order/', views.save_lecture_order, name='save_lecture_order'),
+    path('lecture/<str:type>/<int:lecture_id>/', views.lecture_detail_modal, name='lecture_detail_modal'),
+    # urls.py (اضف داخل urlpatterns)
+    path('lecture/<str:lecture_type>/<int:lecture_id>/edit/', views.edit_lecture_ajax, name='edit_lecture_ajax'),
+    path('lecture/<str:lecture_type>/<int:lecture_id>/delete/', views.delete_lecture_ajax, name='delete_lecture_ajax'),
 
     ]

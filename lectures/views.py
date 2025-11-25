@@ -967,3 +967,167 @@ def module_manage(request, module_id):
         'clinical_systems': clinical_systems, # ✅ أضفتها
     }
     return render(request, 'model_details_edit.html', context)
+from django.shortcuts import get_object_or_404, redirect
+from .models import Module, BasicLecture, ClinicalLecture, Discipline
+
+@login_required
+def add_lecture_modal(request, module_id):
+    module = get_object_or_404(Module, id=module_id)
+
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        lecture_type = request.POST.get('lecture_type')
+        order = request.POST.get('order', 1)
+
+        video_file = request.FILES.get('video_file')  # ← هنا المشكلة الحقيقية
+
+        if module.basic_system:
+            discipline_id = request.POST.get('discipline')
+            discipline = get_object_or_404(Discipline, id=discipline_id)
+
+            BasicLecture.objects.create(
+                module=module,
+                title=title,
+                description=description,
+                lecture_type=lecture_type,
+                order=order,
+                discipline=discipline,
+                instructor=request.user,
+                video_file=video_file   # ← إضافة الفيديو
+            )
+
+        elif module.clinical_system:
+            ClinicalLecture.objects.create(
+                module=module,
+                title=title,
+                description=description,
+                lecture_type=lecture_type,
+                order=order,
+                instructor=request.user,
+                video_file=video_file   # ← إضافة الفيديو
+            )
+
+    return redirect('lectures:module_manage', module_id=module.id)
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import BasicLecture, ClinicalLecture, Module
+
+@csrf_exempt  # أو استخدم @ensure_csrf_cookie مع AJAX
+def save_lecture_order(request, module_id):
+    if request.method == "POST":
+        order = request.POST.getlist('order[]')  # قائمة الـ IDs
+
+        # تحديث ترتيب المحاضرات
+        for index, lec_id in enumerate(order, start=1):
+            # حاول إيجاد المحاضرة في Basic وClinical
+            try:
+                lec = BasicLecture.objects.get(id=lec_id, module_id=module_id)
+            except BasicLecture.DoesNotExist:
+                try:
+                    lec = ClinicalLecture.objects.get(id=lec_id, module_id=module_id)
+                except ClinicalLecture.DoesNotExist:
+                    continue  # إذا لم توجد المحاضرة تجاهلها
+
+            lec.order = index  # تأكد من وجود حقل order في النموذج
+            lec.save()
+
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'failed'}, status=400)
+
+# lectures/views.py
+from django.shortcuts import get_object_or_404, render
+from .models import BasicLecture, ClinicalLecture
+
+def lecture_detail_modal(request, type, lecture_id):
+    if type == "basic":
+        lecture = get_object_or_404(BasicLecture, id=lecture_id)
+        template = "lectures/modals/basic_lecture_detail.html"
+    else:
+        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+        template = "lectures/modals/clinical_lecture_detail.html"
+
+    return render(request, template, {
+        "lecture": lecture
+    })
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from django.core.exceptions import PermissionDenied
+
+@login_required
+@require_POST
+def delete_lecture_ajax(request, lecture_type, lecture_id):
+    # تحقق ونمسح المحاضرة
+    if lecture_type == 'basic':
+        lec = get_object_or_404(BasicLecture, id=lecture_id)
+    else:
+        lec = get_object_or_404(ClinicalLecture, id=lecture_id)
+
+    # امنع الحذف لو مش المعلم المالك
+    if lec.instructor != request.user:
+        return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
+
+    lec.delete()
+    return JsonResponse({'success': True, 'message': 'Lecture deleted'})
+
+@login_required
+def edit_lecture_ajax(request, lecture_type, lecture_id):
+    # يسمح GET لإرجاع HTML للنموذج (للمودال) و POST لتحديث البيانات
+    if lecture_type == 'basic':
+        lecture = get_object_or_404(BasicLecture, id=lecture_id)
+        is_basic = True
+    else:
+        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+        is_basic = False
+
+    if lecture.instructor != request.user:
+        return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
+
+    if request.method == 'GET':
+        # نرجع JSON بسيط لملء الفورم في المودال
+        data = {
+            'id': lecture.id,
+            'title': lecture.title,
+            'description': lecture.description or '',
+            'order': lecture.order,
+            'lecture_type': lecture.lecture_type,
+            # للـ basic: discipline id
+            'discipline_id': getattr(lecture, 'discipline_id', None),
+        }
+        return JsonResponse({'success': True, 'lecture': data})
+
+    # POST -> update
+    title = request.POST.get('title')
+    description = request.POST.get('description')
+    order = request.POST.get('order') or lecture.order
+    lecture_type_field = request.POST.get('lecture_type')
+
+    # تحديث الحقول العامة
+    lecture.title = title or lecture.title
+    lecture.description = description
+    try:
+        lecture.order = int(order)
+    except Exception:
+        pass
+
+    # handle file (video)
+    if 'video_file' in request.FILES:
+        lecture.video_file = request.FILES['video_file']
+
+    # اذا كان basic وحصلنا discipline
+    if is_basic:
+        disc_id = request.POST.get('discipline')
+        if disc_id:
+            from .models import Discipline
+            try:
+                lecture.discipline = Discipline.objects.get(id=disc_id)
+            except Discipline.DoesNotExist:
+                pass
+
+    lecture.save()
+    return JsonResponse({'success': True, 'message': 'Lecture updated', 'lecture_id': lecture.id})

@@ -1,241 +1,613 @@
 {% extends "dashboards/instructor_base.html" %}
 {% load static %}
-
 {% block title %}Manage Module{% endblock %}
 
 {% block content %}
 <div class="container">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ module.title }}</h2>
-        <a href="{% url 'lectures:my_lectures' %}" class="btn btn-outline-secondary">Back</a>
-    </div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ module.title }}</h2>
+    <a href="{% url 'lectures:my_lectures' %}" class="btn btn-outline-secondary">Back</a>
+  </div>
 
-    <!-- معلومات المودل مع الصورة بجانب البيانات -->
-    <div class="card mb-4">
-        <div class="card-header fw-bold">Module Information</div>
-        <div class="card-body">
-            <div class="row">
-                <!-- عمود البيانات -->
-                <div class="col-md-8">
-                    <p><strong>Description:</strong> {{ module.description }}</p>
-                    <p><strong>Price:</strong> {{ module.price }} EGP</p>
-                    <p><strong>Status:</strong> {{ module.get_status_display }}</p>
+  <!-- Module info -->
+  <div class="card mb-4">
+    <div class="card-header fw-bold">Module Information</div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-8">
+          <p><strong>Description:</strong> {{ module.description }}</p>
+          <p><strong>Price:</strong> {{ module.price }} EGP</p>
+          <p><strong>Status:</strong> {{ module.get_status_display }}</p>
 
-                    <p><strong>Basic System:</strong> 
-                        {% if module.basic_system %}
-                            {{ module.basic_system.name }}
-                        {% else %}
-                            None
-                        {% endif %}
-                    </p>
+          <p><strong>Basic System:</strong>
+            {% if module.basic_system %}{{ module.basic_system.name }}{% else %}None{% endif %}
+          </p>
 
-                    <p><strong>Clinical System:</strong> 
-                        {% if module.clinical_system %}
-                            {{ module.clinical_system.name }}
-                        {% else %}
-                            None
-                        {% endif %}
-                    </p>
+          <p><strong>Clinical System:</strong>
+            {% if module.clinical_system %}{{ module.clinical_system.name }}{% else %}None{% endif %}
+          </p>
 
-                    <p><strong>Total Duration:</strong> {{ module.total_duration_minutes }} minutes</p>
+          <p><strong>Total Duration:</strong> {{ module.total_duration_minutes }} minutes</p>
 
-                    <!-- زر فتح Modal -->
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModuleModal">
-                        Edit Module Info
-                    </button>
-                </div>
-
-                <!-- عمود الصورة -->
-                {% if module.thumbnail %}
-                <div class="col-md-4 d-flex align-items-center justify-content-center">
-                    <img src="{{ module.thumbnail.url }}" alt="{{ module.title }}" class="img-fluid rounded" style="max-height: 200px;">
-                </div>
-                {% endif %}
-            </div>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModuleModal">
+            Edit Module Info
+          </button>
         </div>
-    </div>
 
-    <!-- Modal لتعديل المودل -->
-<div class="modal fade" id="editModuleModal" tabindex="-1" aria-labelledby="editModuleModalLabel" aria-hidden="true">
+        <div class="col-md-4 d-flex align-items-center justify-content-center">
+          {# استخدام صورة افتراضية من الملفات المرفوعة إذا لم يوجد thumbnail #}
+          <img src="{{ module.thumbnail.url|default:'/mnt/data/b1593973-6fa6-4167-9784-7cf593f8296f.png' }}"
+               alt="{{ module.title }}" class="img-fluid rounded" style="max-height:200px;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ---------------- Edit Module Modal (unchanged layout) ---------------- #}
+  <div class="modal fade" id="editModuleModal" tabindex="-1" aria-labelledby="editModuleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <form method="POST" action="{% url 'lectures:edit_module' module.id %}" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editModuleModalLabel">Edit Module</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content">
+        <form method="POST" action="{% url 'lectures:edit_module' module.id %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModuleModalLabel">Edit Module</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <div class="mb-3">
+                  <label for="title" class="form-label">Title</label>
+                  <input type="text" class="form-control" id="title" name="title" value="{{ module.title }}" required>
                 </div>
 
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <!-- عمود الفورم -->
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="title" class="form-label">Title</label>
-                                <input type="text" class="form-control" id="title" name="title" value="{{ module.title }}" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="description" class="form-label">Description</label>
-                                <textarea class="form-control" id="description" name="description" rows="3">{{ module.description }}</textarea>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="price" class="form-label">Price (EGP)</label>
-                                <input type="number" class="form-control" id="price" name="price" value="{{ module.price }}" step="0.01" required>
-                            </div>
-
-                            <!-- Status للعرض فقط -->
-                            <div class="mb-3">
-                                <label class="form-label">Status</label>
-                                <input type="text" class="form-control" value="{{ module.get_status_display }}" readonly>
-                                <small class="text-muted">Status can only be changed by admin.</small>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="total_duration_minutes" class="form-label">Total Duration (minutes)</label>
-                                <input type="number" class="form-control" id="total_duration_minutes" name="total_duration_minutes" value="{{ module.total_duration_minutes }}">
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="basic_system" class="form-label">Basic System</label>
-                                <select class="form-select" id="basic_system" name="basic_system">
-                                    <option value="">-- None --</option>
-                                    {% for system in basic_systems %}
-                                        <option value="{{ system.id }}" {% if module.basic_system and module.basic_system.id == system.id %}selected{% endif %}>{{ system.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="clinical_system" class="form-label">Clinical System</label>
-                                <select class="form-select" id="clinical_system" name="clinical_system">
-                                    <option value="">-- None --</option>
-                                    {% for system in clinical_systems %}
-                                        <option value="{{ system.id }}" {% if module.clinical_system and module.clinical_system.id == system.id %}selected{% endif %}>{{ system.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="thumbnail" class="form-label">Thumbnail</label>
-                                <input type="file" class="form-control" id="thumbnail" name="thumbnail">
-                                {% if module.thumbnail %}
-                                    <small class="text-muted">Current: {{ module.thumbnail.name }}</small>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- عمود الصورة -->
-                        <div class="col-md-4 d-flex align-items-center justify-content-center">
-                            {% if module.thumbnail %}
-                                <img src="{{ module.thumbnail.url }}" alt="{{ module.title }}" class="img-fluid rounded" style="max-height: 200px;">
-                            {% else %}
-                                <div class="text-center text-muted">
-                                    <small>No thumbnail</small>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
+                <div class="mb-3">
+                  <label for="description" class="form-label">Description</label>
+                  <textarea class="form-control" id="description" name="description" rows="3">{{ module.description }}</textarea>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                <div class="mb-3">
+                  <label for="price" class="form-label">Price (EGP)</label>
+                  <input type="number" class="form-control" id="price" name="price" value="{{ module.price }}" step="0.01" required>
                 </div>
-            </form>
-        </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Status</label>
+                  <input type="text" class="form-control" value="{{ module.get_status_display }}" readonly>
+                  <small class="text-muted">Status can only be changed by admin.</small>
+                </div>
+
+                <div class="mb-3">
+                  <label for="total_duration_minutes" class="form-label">Total Duration (minutes)</label>
+                  <input type="number" class="form-control" id="total_duration_minutes" name="total_duration_minutes" value="{{ module.total_duration_minutes }}">
+                </div>
+
+                <div class="mb-3">
+                  <label for="basic_system" class="form-label">Basic System</label>
+                  <select class="form-select" id="basic_system" name="basic_system">
+                    <option value="">-- None --</option>
+                    {% for system in basic_systems %}
+                      <option value="{{ system.id }}" {% if module.basic_system and module.basic_system.id == system.id %}selected{% endif %}>{{ system.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label for="clinical_system" class="form-label">Clinical System</label>
+                  <select class="form-select" id="clinical_system" name="clinical_system">
+                    <option value="">-- None --</option>
+                    {% for system in clinical_systems %}
+                      <option value="{{ system.id }}" {% if module.clinical_system and module.clinical_system.id == system.id %}selected{% endif %}>{{ system.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label for="thumbnail" class="form-label">Thumbnail</label>
+                  <input type="file" class="form-control" id="thumbnail" name="thumbnail">
+                  {% if module.thumbnail %}
+                    <small class="text-muted">Current: {{ module.thumbnail.name }}</small>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-4 d-flex align-items-center justify-content-center">
+                {% if module.thumbnail %}
+                  <img src="{{ module.thumbnail.url }}" alt="{{ module.title }}" class="img-fluid rounded" style="max-height:200px;">
+                {% else %}
+                  <div class="text-center text-muted"><small>No thumbnail</small></div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
+
+  {# ---------------- Add Lecture Modal ---------------- #}
+  <div class="modal fade" id="addLectureModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form method="POST" action="{% url 'lectures:add_lecture_modal' module.id %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Add New Lecture</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Lecture Title</label>
+                <input type="text" name="title" class="form-control" required>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Lecture Type</label>
+                <select name="lecture_type" class="form-select">
+                  <option value="recorded">Recorded</option>
+                  <option value="zoom">Live Zoom</option>
+                </select>
+              </div>
+
+              <div class="col-md-12">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control"></textarea>
+              </div>
+
+              {% if module.basic_system %}
+                <div class="col-md-12">
+                  <label class="form-label">Discipline</label>
+                  <select name="discipline" class="form-select" required>
+                    <option value="">-- Select Discipline --</option>
+                    {% for disc in module.basic_system.disciplines.all %}
+                      <option value="{{ disc.id }}">{{ disc.get_name_display }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              {% endif %}
+
+              <div class="col-md-6">
+                <label class="form-label">Order</label>
+                <input type="number" name="order" class="form-control" value="1">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Video File</label>
+                <input type="file" name="video_file" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary" type="submit">Add Lecture</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# ---------------- Lectures list ---------------- #}
+  <div class="mb-4">
+    <h4>Lectures</h4>
+    <div class="mb-3">
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addLectureModal">+ Add Lecture</button>
+    </div>
+
+    <ul id="lecturesList" class="list-group">
+      {# نعرض الأسطر بدون سطور داخلية داخل data-* لتفادي مشاكل #}
+      {% for lec in basic_lectures %}
+        <li class="list-group-item sortable-item"
+            data-id="{{ lec.id }}"
+            data-title="{{ lec.title|escape }}"
+            data-type="basic"
+            data-video-url="{% if lec.video_file %}{{ lec.video_file.url }}{% elif lec.video_url %}{{ lec.video_url }}{% else %}#{% endif %}"
+            data-discipline="{{ lec.discipline.get_name_display }}"
+            data-description="{{ lec.description|escape }}
+            ">
+          <div class="d-flex justify-content-between">
+            <div><strong>{{ lec.title }}</strong> <span class="badge bg-secondary">Basic</span></div>
+            <div class="text-muted small">{{ lec.order }}</div>
+          </div>
+        </li>
+      {% endfor %}
+
+      {% for lec in clinical_lectures %}
+        <li class="list-group-item sortable-item"
+            data-id="{{ lec.id }}"
+            data-type="clinical"
+            data-title="{{ lec.title|escape }}"
+            data-video-url="{% if lec.video_file %}{{ lec.video_file.url }}{% elif lec.video_url %}{{ lec.video_url }}{% else %}#{% endif %}"
+            data-description="{{ lec.description|escape }}">
+          <div class="d-flex justify-content-between">
+            <div><strong>{{ lec.title }}</strong> <span class="badge bg-secondary">Clinical</span></div>
+            <div class="text-muted small">{{ lec.order }}</div>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {# ---------------- Lecture Details Modal (full) ---------------- #}
+  <div class="modal fade" id="lectureDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="lectureDetailTitle"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <video id="lectureDetailVideo" class="w-100 rounded shadow-sm mb-3" controls>
+            <source id="lectureVideoSource" src="" type="video/mp4">
+            متصفحك لا يدعم تشغيل الفيديو.
+          </video>
+
+          <h6 class="fw-bold">Description</h6>
+          <p id="lectureDetailDescription" class="text-muted"></p>
+
+          <hr>
+
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <span class="fw-bold">Lecture Type:</span> <span id="lectureDetailType"></span>
+            </div>
+
+            <div class="col-md-4" id="lectureDisciplineBlock" style="display:none;">
+              <span class="fw-bold">Discipline:</span> <span id="lectureDetailDiscipline"></span>
+            </div>
+
+            <div class="col-md-4" id="lectureZoomBlock" style="display:none;">
+              <span class="fw-bold">Zoom:</span> <span id="lectureDetailZoom"></span>
+            </div>
+          </div>
+
+          <div id="lectureResourcesBlock" style="display:none;">
+            <h6 class="fw-bold">Resources</h6>
+            <a id="lectureResourceLink" href="#" target="_blank" class="btn btn-outline-primary btn-sm">Download Resource</a>
+          </div>
+
+          <hr>
+          <h6 class="fw-bold">Quizzes</h6>
+          <ul id="lectureQuizzesList" class="list-group mb-3"></ul>
+
+          <h6 class="fw-bold">Case Studies</h6>
+          <ul id="lectureCasesList" class="list-group"></ul>
+
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="prevLectureBtn">Previous</button>
+          <button class="btn btn-secondary" id="nextLectureBtn">Next</button>
+
+          <div class="ms-auto">
+            <a id="editLectureBtn" class="btn btn-warning">Edit</a>
+            <a id="deleteLectureBtn" class="btn btn-danger">Delete</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- Edit Lecture Modal -->
+<div class="modal fade" id="editLectureModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form id="editLectureForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Lecture</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="lecture_id" id="editLectureId">
+          <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" name="title" id="editLectureTitle" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" id="editLectureDescription" class="form-control"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Order</label>
+            <input type="number" name="order" id="editLectureOrder" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Video file (optional)</label>
+            <input type="file" name="video_file" id="editLectureVideo" class="form-control">
+          </div>
+
+          <div class="mb-3" id="editDisciplineWrap" style="display:none;">
+            <label class="form-label">Discipline</label>
+            <select name="discipline" id="editLectureDiscipline" class="form-select">
+              <option value="">-- none --</option>
+              {% for d in module.basic_system.disciplines.all %}
+                <option value="{{ d.id }}">{{ d.get_name_display }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
-<!-- JS لتعطيل النظام الآخر عند الاختيار -->
+
+  {# Quizzes / Case Studies shortcuts #}
+  <div class="mb-4">
+    <h4>Quizzes</h4>
+    <a href="{% url 'lectures:add_quiz' module.id %}" class="btn btn-info">+ Add Quiz</a>
+  </div>
+
+  <div class="mb-4">
+    <h4>Case Studies</h4>
+    <a href="{% url 'lectures:add_case_study' module.id %}" class="btn btn-dark">+ Add Case Study</a>
+  </div>
+
+</div>
+
+{# ---------- Scripts ---------- #}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const basicSelect = document.getElementById('basic_system');
-    const clinicalSelect = document.getElementById('clinical_system');
+document.addEventListener("DOMContentLoaded", function() {
 
-    function toggleSystems() {
-        if (basicSelect.value) {
-            clinicalSelect.disabled = true;
-        } else {
-            clinicalSelect.disabled = false;
-        }
+  // init sortable
+  $("#lecturesList").sortable({
+    placeholder: "list-group-item bg-light",
+    helper: "clone",
+    update: function(event, ui) {
+      // build order
+      let order = [];
+      $("#lecturesList li").each(function() { order.push($(this).data("id")); });
 
-        if (clinicalSelect.value) {
-            basicSelect.disabled = true;
-        } else {
-            basicSelect.disabled = false;
-        }
+      // send to server (expects view at lectures:save_lecture_order)
+      $.ajax({
+        url: "{% url 'lectures:save_lecture_order' module.id %}",
+        method: "POST",
+        data: {
+          'order[]': order,
+          'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function() { console.log("Lecture order saved!"); },
+        error: function() { console.warn("Failed to save lecture order."); }
+      });
+    }
+  });
+
+  const lectureModalEl = document.getElementById('lectureDetailModal');
+  const lectureModal = new bootstrap.Modal(lectureModalEl);
+
+  // helper: rebuild list items (live) and return array
+  function currentLectureArray() {
+    return Array.from(document.querySelectorAll("#lecturesList li"));
+  }
+
+  // click handler (delegated)
+  $("#lecturesList").on("click", "li", function (e) {
+    // if dragging helper: ignore
+    if ($(this).hasClass("ui-sortable-helper")) return;
+
+    const lectureArray = currentLectureArray();
+    const index = lectureArray.indexOf(this);
+    loadLectureDetails(this, index);
+    lectureModal.show();
+  });
+
+  // load details into modal
+  function loadLectureDetails(el, index) {
+    // read attributes (dataset)
+    const id = el.dataset.id;
+    const title = el.dataset.title || "";
+    const description = el.dataset.description || "";
+    const videoUrl = el.dataset.videoUrl || "";
+    // optional fields (if you pass them from backend)
+    const type = el.dataset.type || "recorded";
+    const discipline = el.dataset.discipline || null;
+    const zoom = el.dataset.zoom || null;
+    const resource = el.dataset.resource || null;
+    const quizzes = (el.dataset.quizzes) ? JSON.parse(el.dataset.quizzes) : [];
+    const cases = (el.dataset.cases) ? JSON.parse(el.dataset.cases) : [];
+
+    document.getElementById("lectureDetailTitle").innerText = title;
+    document.getElementById("lectureDetailDescription").innerText = description;
+    document.getElementById("lectureDetailType").innerText = type;
+    document.getElementById('editLectureBtn').dataset.lectureId = id;
+    document.getElementById('editLectureBtn').dataset.lectureType = type;
+    document.getElementById('deleteLectureBtn').dataset.lectureId = id;
+    document.getElementById('deleteLectureBtn').dataset.lectureType = type;
+    // video handling
+    const video = document.getElementById('lectureDetailVideo');
+    const source = document.getElementById('lectureVideoSource');
+
+    // if no valid url -> show placeholder & pause
+    if (!videoUrl || videoUrl === "#") {
+      source.src = "";
+      video.pause();
+      video.removeAttribute('poster');
+      // show a visual fallback: replace video tag with message OR set poster
+      // here we hide controls and show friendly message by overlaying description already present
+      console.warn("No video URL for lecture id:", id);
+    } else {
+      // detect extension and set correct MIME if possible
+      const lower = videoUrl.toLowerCase();
+      let mime = "video/mp4";
+      if (lower.endsWith(".webm")) mime = "video/webm";
+      else if (lower.endsWith(".ogg") || lower.endsWith(".ogv")) mime = "video/ogg";
+      else if (lower.endsWith(".mp4")) mime = "video/mp4";
+
+      source.type = mime;
+      source.src = videoUrl;
+      // reload player
+      try { video.load(); }
+      catch (err) { console.error("video.load() error", err); }
     }
 
-    basicSelect.addEventListener('change', toggleSystems);
-    clinicalSelect.addEventListener('change', toggleSystems);
+    // optional blocks
+    if (discipline) {
+      document.getElementById("lectureDisciplineBlock").style.display = "block";
+      document.getElementById("lectureDetailDiscipline").innerText = discipline;
+    } else {
+      document.getElementById("lectureDisciplineBlock").style.display = "none";
+    }
 
-    // تشغيل عند تحميل المودال
-    toggleSystems();
+    if (zoom) {
+      document.getElementById("lectureZoomBlock").style.display = "block";
+      document.getElementById("lectureDetailZoom").innerHTML = zoom;
+    } else {
+      document.getElementById("lectureZoomBlock").style.display = "none";
+    }
+
+    if (resource) {
+      document.getElementById("lectureResourcesBlock").style.display = "block";
+      document.getElementById("lectureResourceLink").href = resource;
+    } else {
+      document.getElementById("lectureResourcesBlock").style.display = "none";
+    }
+
+    // quizzes & cases lists
+    const qList = document.getElementById("lectureQuizzesList");
+    qList.innerHTML = "";
+    quizzes.forEach(q => { qList.innerHTML += `<li class="list-group-item">${q}</li>`; });
+
+    const cList = document.getElementById("lectureCasesList");
+    cList.innerHTML = "";
+    cases.forEach(c => { cList.innerHTML += `<li class="list-group-item">${c}</li>`; });
+
+    // edit/delete links
+   
+
+    // navigation: attach functions using live array
+    setupNavigation(index);
+  }
+
+  function setupNavigation(index) {
+    // rebuild live list when navigating
+    document.getElementById("prevLectureBtn").onclick = () => {
+      const arr = currentLectureArray();
+      if (index > 0) arr[index - 1].click();
+    };
+    document.getElementById("nextLectureBtn").onclick = () => {
+      const arr = currentLectureArray();
+      if (index < arr.length - 1) arr[index + 1].click();
+    };
+  }
+// داخل loadLectureDetails بعد تعبئة الحقول:
+
+// Edit button click -> load data via GET and open edit modal
+$('#editLectureBtn').off('click').on('click', function(e){
+  e.preventDefault();
+  const lectureId = this.dataset.lectureId;
+  const lectureType = this.dataset.lectureType;
+  $.get(`/lectures/lecture/${lectureType}/${lectureId}/edit/`, function(resp){
+    if(resp.success){
+      const l = resp.lecture;
+      $('#editLectureId').val(l.id);
+      $('#editLectureTitle').val(l.title);
+      $('#editLectureDescription').val(l.description);
+      $('#editLectureOrder').val(l.order);
+      if (lectureType === 'basic') {
+        $('#editDisciplineWrap').show();
+        $('#editLectureDiscipline').val(l.discipline_id);
+      } else {
+        $('#editDisciplineWrap').hide();
+      }
+      var modal = new bootstrap.Modal(document.getElementById('editLectureModal'));
+      modal.show();
+    } else {
+      alert('Failed to load lecture data');
+    }
+  });
+});
+
+// Submit edit form via AJAX (multipart for file)
+$('#editLectureForm').on('submit', function(e){
+  e.preventDefault();
+  const lectureId = $('#editLectureId').val();
+  // get lectureType from currently editing (we stored on edit button earlier)
+  const lectureType = $('#editLectureBtn').data('lecture-type');
+  const formData = new FormData(this);
+  // CSRF token header for Django
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  $.ajax({
+    url: `/lectures/lecture/${lectureType}/${lectureId}/edit/`,
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    headers: {'X-CSRFToken': csrftoken},
+    success: function(resp){
+      if(resp.success){
+        // تحديث السطر في الـ list مباشرًا (أسرع) — أو إعادة تحميل الصفحة
+        // هنا نحدّث title و description داخل العنصر اللي يحمل data-id
+        const li = $(`#lecturesList li[data-id="${lectureId}"]`);
+        li.attr('data-title', $('#editLectureTitle').val());
+        li.attr('data-description', $('#editLectureDescription').val());
+        li.find('strong').first().text($('#editLectureTitle').val());
+        // اغلق المودال
+        var eModal = bootstrap.Modal.getInstance(document.getElementById('editLectureModal'));
+        eModal.hide();
+        // اعادة تحميل تفاصيل المودال المفتوح لو لازم
+        // loadLectureDetails(li[0], /* index */ 0);
+      } else {
+        alert('Update failed: ' + (resp.error || 'Unknown'));
+      }
+    },
+    error: function(xhr){
+      alert('Update failed. Check console.');
+      console.error(xhr);
+    }
+  });
+});
+
+// Delete button -> confirm then POST
+$('#deleteLectureBtn').off('click').on('click', function(e){
+  e.preventDefault();
+  const lectureId = this.dataset.lectureId;
+  const lectureType = this.dataset.lectureType;
+  if(!confirm('Are you sure you want to delete this lecture? This cannot be undone.')) return;
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  $.ajax({
+    url: `/lectures/lecture/${lectureType}/${lectureId}/delete/`,
+    type: 'POST',
+    headers: {'X-CSRFToken': csrftoken},
+    success: function(resp){
+      if(resp.success){
+        // remove item from list and close modal
+        $(`#lecturesList li[data-id="${lectureId}"]`).remove();
+        var curModal = bootstrap.Modal.getInstance(document.getElementById('lectureDetailModal'));
+        curModal.hide();
+        alert('Lecture deleted');
+      } else {
+        alert('Delete failed: ' + (resp.error || 'Unknown'));
+      }
+    },
+    error: function(xhr){
+      alert('Delete failed. Check console.');
+      console.error(xhr);
+    }
+  });
+});
+
 });
 </script>
-
-
-    <!-- إدارة المحاضرات -->
-    <div class="mb-4">
-        <h4>Lectures</h4>
-
-        <div class="mb-3">
-            {% if module.basic_system %}
-            <a href="{% url 'lectures:add_basic_lecture' module.id %}" class="btn btn-success">
-                + Add Basic Lecture
-            </a>
-            {% endif %}
-
-            {% if module.clinical_system %}
-            <a href="{% url 'lectures:add_clinical_lecture' module.id %}" class="btn btn-warning">
-                + Add Clinical Lecture
-            </a>
-            {% endif %}
-        </div>
-
-        <div class="row">
-            {% for lec in basic_lectures %}
-            <div class="col-md-6">
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h6>{{ lec.title }}</h6>
-                        <small class="text-muted">Basic</small>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-
-            {% for lec in clinical_lectures %}
-            <div class="col-md-6">
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h6>{{ lec.title }}</h6>
-                        <small class="text-muted">Clinical</small>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- إدارة الكويزات -->
-    <div class="mb-4">
-        <h4>Quizzes</h4>
-        <a href="{% url 'lectures:add_quiz' module.id %}" class="btn btn-info">
-            + Add Quiz
-        </a>
-    </div>
-
-    <!-- إدارة Case Studies -->
-    <div class="mb-4">
-        <h4>Case Studies</h4>
-        <a href="{% url 'lectures:add_case_study' module.id %}" class="btn btn-dark">
-            + Add Case Study
-        </a>
-    </div>
-
-</div>
 {% endblock %}
