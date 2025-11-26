@@ -40,5 +40,11 @@ urlpatterns = [
     # urls.py (اضف داخل urlpatterns)
     path('lecture/<str:lecture_type>/<int:lecture_id>/edit/', views.edit_lecture_ajax, name='edit_lecture_ajax'),
     path('lecture/<str:lecture_type>/<int:lecture_id>/delete/', views.delete_lecture_ajax, name='delete_lecture_ajax'),
+   path("quiz/create/", views.create_quiz, name="create_quiz"),
+   path("question/create/", views.create_question, name="create_question"),
+   path("quiz/<int:quiz_id>/details/", views.quiz_details, name="quiz_details"),
+   path("quiz/<int:quiz_id>/delete/", views.quiz_delete, name="quiz_delete"),
+   path("question/<int:question_id>/edit/", views.question_edit, name="question_edit"),
+   path("question/<int:question_id>/delete/", views.question_delete, name="question_delete"),
 
     ]

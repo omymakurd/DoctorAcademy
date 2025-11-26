@@ -44,11 +44,11 @@
     </div>
   </div>
 
-  {# ---------------- Edit Module Modal (unchanged layout) ---------------- #}
+  {# ---------------- Edit Module Modal ---------------- #}
   <div class="modal fade" id="editModuleModal" tabindex="-1" aria-labelledby="editModuleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
-        <form method="POST" action="{% url 'lectures:edit_module' module.id %}" enctype="multipart/form-data">
+        <form method="POST" action="{% url 'lectures:edit_module' module.id %}" enctype="multipart/form-data" id="editModuleForm">
           {% csrf_token %}
           <div class="modal-header">
             <h5 class="modal-title" id="editModuleModalLabel">Edit Module</h5>
@@ -58,18 +58,18 @@
             <div class="row g-3">
               <div class="col-md-8">
                 <div class="mb-3">
-                  <label for="title" class="form-label">Title</label>
-                  <input type="text" class="form-control" id="title" name="title" value="{{ module.title }}" required>
+                  <label for="module_title" class="form-label">Title</label>
+                  <input type="text" class="form-control" id="module_title" name="title" value="{{ module.title }}" required>
                 </div>
 
                 <div class="mb-3">
-                  <label for="description" class="form-label">Description</label>
-                  <textarea class="form-control" id="description" name="description" rows="3">{{ module.description }}</textarea>
+                  <label for="module_description" class="form-label">Description</label>
+                  <textarea class="form-control" id="module_description" name="description" rows="3">{{ module.description }}</textarea>
                 </div>
 
                 <div class="mb-3">
-                  <label for="price" class="form-label">Price (EGP)</label>
-                  <input type="number" class="form-control" id="price" name="price" value="{{ module.price }}" step="0.01" required>
+                  <label for="module_price" class="form-label">Price (EGP)</label>
+                  <input type="number" class="form-control" id="module_price" name="price" value="{{ module.price }}" step="0.01" required>
                 </div>
 
                 <div class="mb-3">
@@ -79,8 +79,8 @@
                 </div>
 
                 <div class="mb-3">
-                  <label for="total_duration_minutes" class="form-label">Total Duration (minutes)</label>
-                  <input type="number" class="form-control" id="total_duration_minutes" name="total_duration_minutes" value="{{ module.total_duration_minutes }}">
+                  <label for="module_total_duration_minutes" class="form-label">Total Duration (minutes)</label>
+                  <input type="number" class="form-control" id="module_total_duration_minutes" name="total_duration_minutes" value="{{ module.total_duration_minutes }}">
                 </div>
 
                 <div class="mb-3">
@@ -105,7 +105,7 @@
 
                 <div class="mb-3">
                   <label for="thumbnail" class="form-label">Thumbnail</label>
-                  <input type="file" class="form-control" id="thumbnail" name="thumbnail">
+                  <input type="file" class="form-control" id="module_thumbnail" name="thumbnail">
                   {% if module.thumbnail %}
                     <small class="text-muted">Current: {{ module.thumbnail.name }}</small>
                   {% endif %}
@@ -135,7 +135,7 @@
   <div class="modal fade" id="addLectureModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
-        <form method="POST" action="{% url 'lectures:add_lecture_modal' module.id %}" enctype="multipart/form-data">
+        <form method="POST" action="{% url 'lectures:add_lecture_modal' module.id %}" enctype="multipart/form-data" id="addLectureForm">
           {% csrf_token %}
           <div class="modal-header">
             <h5 class="modal-title">Add New Lecture</h5>
@@ -146,12 +146,12 @@
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label">Lecture Title</label>
-                <input type="text" name="title" class="form-control" required>
+                <input type="text" id="addLectureTitle" name="title" class="form-control" required>
               </div>
 
               <div class="col-md-6">
                 <label class="form-label">Lecture Type</label>
-                <select name="lecture_type" class="form-select">
+                <select name="lecture_type" id="addLectureType" class="form-select">
                   <option value="recorded">Recorded</option>
                   <option value="zoom">Live Zoom</option>
                 </select>
@@ -159,13 +159,13 @@
 
               <div class="col-md-12">
                 <label class="form-label">Description</label>
-                <textarea name="description" class="form-control"></textarea>
+                <textarea name="description" id="addLectureDescription" class="form-control"></textarea>
               </div>
 
               {% if module.basic_system %}
                 <div class="col-md-12">
                   <label class="form-label">Discipline</label>
-                  <select name="discipline" class="form-select" required>
+                  <select name="discipline" id="addLectureDiscipline" class="form-select" required>
                     <option value="">-- Select Discipline --</option>
                     {% for disc in module.basic_system.disciplines.all %}
                       <option value="{{ disc.id }}">{{ disc.get_name_display }}</option>
@@ -176,12 +176,12 @@
 
               <div class="col-md-6">
                 <label class="form-label">Order</label>
-                <input type="number" name="order" class="form-control" value="1">
+                <input type="number" name="order" id="addLectureOrder" class="form-control" value="1">
               </div>
 
               <div class="col-md-6">
                 <label class="form-label">Video File</label>
-                <input type="file" name="video_file" class="form-control">
+                <input type="file" name="video_file" id="addLectureVideoFile" class="form-control">
               </div>
             </div>
           </div>
@@ -207,12 +207,13 @@
       {% for lec in basic_lectures %}
         <li class="list-group-item sortable-item"
             data-id="{{ lec.id }}"
-            data-title="{{ lec.title|escape }}"
+            data-title="{{ lec.title|escapejs }}"
             data-type="basic"
             data-video-url="{% if lec.video_file %}{{ lec.video_file.url }}{% elif lec.video_url %}{{ lec.video_url }}{% else %}#{% endif %}"
-            data-discipline="{{ lec.discipline.get_name_display }}"
-            data-description="{{ lec.description|escape }}
-            ">
+            data-discipline="{{ lec.discipline.get_name_display|escapejs }}"
+            data-description="{{ lec.description|default:''|escapejs }}"
+            data-quizzes='[{% for q in lec.quizzes.all %}{"id":{{ q.id }},"title":"{{ q.title|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+        >
           <div class="d-flex justify-content-between">
             <div><strong>{{ lec.title }}</strong> <span class="badge bg-secondary">Basic</span></div>
             <div class="text-muted small">{{ lec.order }}</div>
@@ -224,9 +225,11 @@
         <li class="list-group-item sortable-item"
             data-id="{{ lec.id }}"
             data-type="clinical"
-            data-title="{{ lec.title|escape }}"
+            data-title="{{ lec.title|escapejs }}"
             data-video-url="{% if lec.video_file %}{{ lec.video_file.url }}{% elif lec.video_url %}{{ lec.video_url }}{% else %}#{% endif %}"
-            data-description="{{ lec.description|escape }}">
+            data-description="{{ lec.description|default:''|escapejs }}"
+            data-quizzes='[{% for q in lec.quizzes.all %}{"id":{{ q.id }},"title":"{{ q.title|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+        >
           <div class="d-flex justify-content-between">
             <div><strong>{{ lec.title }}</strong> <span class="badge bg-secondary">Clinical</span></div>
             <div class="text-muted small">{{ lec.order }}</div>
@@ -235,7 +238,6 @@
       {% endfor %}
     </ul>
   </div>
-
   {# ---------------- Lecture Details Modal (full) ---------------- #}
   <div class="modal fade" id="lectureDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -278,7 +280,46 @@
 
           <hr>
           <h6 class="fw-bold">Quizzes</h6>
-          <ul id="lectureQuizzesList" class="list-group mb-3"></ul>
+<ul id="lectureQuizzesList" class="list-group mb-3">
+  {# Initially filled by JS from data-quizzes attr on clicked li. #}
+</ul>
+
+<!-- Create Quiz Area -->
+<div id="createQuizArea" class="mt-3">
+    <input type="text" id="quiz_create_title" class="form-control mb-2" placeholder="Quiz Title">
+    <button class="btn btn-primary" id="quizCreateBtn">Create Quiz</button>
+</div>
+
+<!-- Questions Section -->
+<div id="quizQuestionsArea" style="display:none; margin-top:20px;">
+    <h5>Questions for: <span id="currentQuizTitle"></span></h5>
+    <ul id="questionsList" class="list-group mb-3"></ul>
+    <button class="btn btn-success" id="openCreateQuestionBtn">+ Add Question</button>
+</div>
+
+<!-- Add Question Area (Create) -->
+<div id="createQuestionArea" style="display:none; margin-top:20px;">
+    <h5>Add Question</h5>
+
+    <input type="text" id="createQuestionText" class="form-control mb-2" placeholder="Question text">
+
+    <div id="mcqOptions_create">
+        <input type="text" id="create_option1" class="form-control mb-1" placeholder="Option A">
+        <input type="text" id="create_option2" class="form-control mb-1" placeholder="Option B">
+        <input type="text" id="create_option3" class="form-control mb-1" placeholder="Option C">
+        <input type="text" id="create_option4" class="form-control mb-1" placeholder="Option D">
+
+        <select id="create_correctAnswer" class="form-select mt-2">
+            <option value="1">Correct Answer: A</option>
+            <option value="2">Correct Answer: B</option>
+            <option value="3">Correct Answer: C</option>
+            <option value="4">Correct Answer: D</option>
+        </select>
+    </div>
+
+    <button class="btn btn-primary mt-2" id="saveCreateQuestionBtn">Save Question</button>
+    <button class="btn btn-secondary mt-2" id="cancelCreateQuestionBtn">Cancel</button>
+</div>
 
           <h6 class="fw-bold">Case Studies</h6>
           <ul id="lectureCasesList" class="list-group"></ul>
@@ -290,14 +331,54 @@
           <button class="btn btn-secondary" id="nextLectureBtn">Next</button>
 
           <div class="ms-auto">
-            <a id="editLectureBtn" class="btn btn-warning">Edit</a>
-            <a id="deleteLectureBtn" class="btn btn-danger">Delete</a>
+            <a id="editLectureBtn" class="btn btn-warning" role="button" data-lecture-id="" data-lecture-type="">Edit</a>
+            <a id="deleteLectureBtn" class="btn btn-danger" role="button" data-lecture-id="" data-lecture-type="">Delete</a>
+            <button class="btn btn-primary" id="openAddQuizBtn" hidden>Add Quiz</button>
           </div>
         </div>
 
       </div>
     </div>
   </div>
+
+ <!-- Quiz Detail Modal -->
+<div class="modal fade" id="quizDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="quizDetailTitle"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6>Questions</h6>
+        <ul id="quizQuestionsList" class="list-group mb-3"></ul>
+
+        <!-- Add/Edit Question Area (Edit modal) -->
+        <div id="quizEditQuestionArea" style="margin-top:20px; display:none;">
+          <h6>Add/Edit Question</h6>
+          <input type="text" id="editQuestionText" class="form-control mb-2" placeholder="Question text">
+          <input type="text" id="edit_option1" class="form-control mb-1" placeholder="Option A">
+          <input type="text" id="edit_option2" class="form-control mb-1" placeholder="Option B">
+          <input type="text" id="edit_option3" class="form-control mb-1" placeholder="Option C">
+          <input type="text" id="edit_option4" class="form-control mb-1" placeholder="Option D">
+          <select id="edit_correctAnswer" class="form-select mt-2">
+            <option value="1">Correct Answer: A</option>
+            <option value="2">Correct Answer: B</option>
+            <option value="3">Correct Answer: C</option>
+            <option value="4">Correct Answer: D</option>
+          </select>
+          <button class="btn btn-primary mt-2" id="saveQuizQuestionBtn">Save Question</button>
+          <button class="btn btn-secondary mt-2" id="cancelQuizQuestionBtn">Cancel</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="deleteQuizBtn">Delete Quiz</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- Edit Lecture Modal -->
 <div class="modal fade" id="editLectureModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -346,22 +427,7 @@
     </div>
   </div>
 </div>
-
-
-  {# Quizzes / Case Studies shortcuts #}
-  <div class="mb-4">
-    <h4>Quizzes</h4>
-    <a href="{% url 'lectures:add_quiz' module.id %}" class="btn btn-info">+ Add Quiz</a>
-  </div>
-
-  <div class="mb-4">
-    <h4>Case Studies</h4>
-    <a href="{% url 'lectures:add_case_study' module.id %}" class="btn btn-dark">+ Add Case Study</a>
-  </div>
-
-</div>
-
-{# ---------- Scripts ---------- #}
+{# jQuery, jQuery UI and any other libs already included in your base — include if needed #}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
@@ -369,22 +435,26 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
 
-  // init sortable
+  // CSRF helper (reads first csrf token in page)
+  function getCSRF() {
+    const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return el ? el.value : '';
+  }
+
+  // ---------- Sortable lectures ----------
   $("#lecturesList").sortable({
     placeholder: "list-group-item bg-light",
     helper: "clone",
     update: function(event, ui) {
-      // build order
       let order = [];
-      $("#lecturesList li").each(function() { order.push($(this).data("id")); });
+      $("#lecturesList li").each(function() { order.push($(this).dataset ? $(this).dataset.id : $(this).data("id")); });
 
-      // send to server (expects view at lectures:save_lecture_order)
       $.ajax({
         url: "{% url 'lectures:save_lecture_order' module.id %}",
         method: "POST",
         data: {
           'order[]': order,
-          'csrfmiddlewaretoken': '{{ csrf_token }}'
+          'csrfmiddlewaretoken': getCSRF()
         },
         success: function() { console.log("Lecture order saved!"); },
         error: function() { console.warn("Failed to save lecture order."); }
@@ -392,72 +462,68 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 
-  const lectureModalEl = document.getElementById('lectureDetailModal');
-  const lectureModal = new bootstrap.Modal(lectureModalEl);
-
-  // helper: rebuild list items (live) and return array
+  // ---------- helpers ----------
   function currentLectureArray() {
     return Array.from(document.querySelectorAll("#lecturesList li"));
   }
 
-  // click handler (delegated)
-  $("#lecturesList").on("click", "li", function (e) {
-    // if dragging helper: ignore
-    if ($(this).hasClass("ui-sortable-helper")) return;
+  // show lecture detail modal when clicking a lecture
+  const lectureModalEl = document.getElementById('lectureDetailModal');
+  const lectureModal = new bootstrap.Modal(lectureModalEl);
 
-    const lectureArray = currentLectureArray();
-    const index = lectureArray.indexOf(this);
+  $("#lecturesList").on("click", "li", function (e) {
+    if ($(this).hasClass("ui-sortable-helper")) return;
+    const index = currentLectureArray().indexOf(this);
     loadLectureDetails(this, index);
     lectureModal.show();
   });
 
-  // load details into modal
+  // ---------- loadLectureDetails ----------
+  let currentLectureId = null;
+  let currentLectureIndex = 0;
   function loadLectureDetails(el, index) {
-    // read attributes (dataset)
     const id = el.dataset.id;
+    currentLectureId = id;
+    currentLectureIndex = index;
+
+    // read basic attributes from element
     const title = el.dataset.title || "";
     const description = el.dataset.description || "";
     const videoUrl = el.dataset.videoUrl || "";
-    // optional fields (if you pass them from backend)
     const type = el.dataset.type || "recorded";
     const discipline = el.dataset.discipline || null;
     const zoom = el.dataset.zoom || null;
     const resource = el.dataset.resource || null;
-    const quizzes = (el.dataset.quizzes) ? JSON.parse(el.dataset.quizzes) : [];
-    const cases = (el.dataset.cases) ? JSON.parse(el.dataset.cases) : [];
+    const quizzes = el.dataset.quizzes ? JSON.parse(el.dataset.quizzes) : [];
+    const cases = el.dataset.cases ? JSON.parse(el.dataset.cases) : [];
 
     document.getElementById("lectureDetailTitle").innerText = title;
     document.getElementById("lectureDetailDescription").innerText = description;
     document.getElementById("lectureDetailType").innerText = type;
-    document.getElementById('editLectureBtn').dataset.lectureId = id;
-    document.getElementById('editLectureBtn').dataset.lectureType = type;
-    document.getElementById('deleteLectureBtn').dataset.lectureId = id;
-    document.getElementById('deleteLectureBtn').dataset.lectureType = type;
-    // video handling
+
+    // set edit/delete data attributes
+    const editBtn = document.getElementById('editLectureBtn');
+    const delBtn = document.getElementById('deleteLectureBtn');
+    editBtn.dataset.lectureId = id;
+    editBtn.dataset.lectureType = type;
+    delBtn.dataset.lectureId = id;
+    delBtn.dataset.lectureType = type;
+
+    // video
     const video = document.getElementById('lectureDetailVideo');
     const source = document.getElementById('lectureVideoSource');
-
-    // if no valid url -> show placeholder & pause
     if (!videoUrl || videoUrl === "#") {
       source.src = "";
-      video.pause();
-      video.removeAttribute('poster');
-      // show a visual fallback: replace video tag with message OR set poster
-      // here we hide controls and show friendly message by overlaying description already present
-      console.warn("No video URL for lecture id:", id);
+      try { video.pause(); } catch(e){}
     } else {
-      // detect extension and set correct MIME if possible
       const lower = videoUrl.toLowerCase();
       let mime = "video/mp4";
       if (lower.endsWith(".webm")) mime = "video/webm";
       else if (lower.endsWith(".ogg") || lower.endsWith(".ogv")) mime = "video/ogg";
       else if (lower.endsWith(".mp4")) mime = "video/mp4";
-
       source.type = mime;
       source.src = videoUrl;
-      // reload player
-      try { video.load(); }
-      catch (err) { console.error("video.load() error", err); }
+      try { video.load(); } catch(e){ console.error(e); }
     }
 
     // optional blocks
@@ -482,132 +548,280 @@ document.addEventListener("DOMContentLoaded", function() {
       document.getElementById("lectureResourcesBlock").style.display = "none";
     }
 
-    // quizzes & cases lists
+    // reset create quiz / questions UI
+    document.getElementById("createQuizArea").style.display = "";
+    document.getElementById("quizQuestionsArea").style.display = "none";
+    document.getElementById("createQuestionArea").style.display = "none";
+    document.getElementById("quiz_create_title").value = "";
+
+    // build quizzes list with objects (id + title)
     const qList = document.getElementById("lectureQuizzesList");
     qList.innerHTML = "";
-    quizzes.forEach(q => { qList.innerHTML += `<li class="list-group-item">${q}</li>`; });
+    quizzes.forEach(q => {
+      // q can be an object {id, title} or a string; handle both
+      const qid = (typeof q === 'object') ? q.id : q;
+      const qtitle = (typeof q === 'object') ? q.title : q;
+      const li = document.createElement('li');
+      li.className = "list-group-item openQuizModal";
+      li.style.cursor = "pointer";
+      li.dataset.quizId = qid;
+      li.textContent = qtitle;
+      qList.appendChild(li);
+    });
 
+    // build cases list
     const cList = document.getElementById("lectureCasesList");
     cList.innerHTML = "";
-    cases.forEach(c => { cList.innerHTML += `<li class="list-group-item">${c}</li>`; });
+    cases.forEach(c => {
+      const li = document.createElement('li');
+      li.className = "list-group-item";
+      li.textContent = (typeof c === 'object' && c.title) ? c.title : c;
+      cList.appendChild(li);
+    });
 
-    // edit/delete links
-   
-
-    // navigation: attach functions using live array
+    // navigation handlers
     setupNavigation(index);
   }
 
   function setupNavigation(index) {
-    // rebuild live list when navigating
     document.getElementById("prevLectureBtn").onclick = () => {
       const arr = currentLectureArray();
-      if (index > 0) arr[index - 1].click();
+      if (currentLectureIndex > 0) {
+        arr[currentLectureIndex - 1].click();
+      }
     };
     document.getElementById("nextLectureBtn").onclick = () => {
       const arr = currentLectureArray();
-      if (index < arr.length - 1) arr[index + 1].click();
+      if (currentLectureIndex < arr.length - 1) {
+        arr[currentLectureIndex + 1].click();
+      }
     };
   }
-// داخل loadLectureDetails بعد تعبئة الحقول:
 
-// Edit button click -> load data via GET and open edit modal
-$('#editLectureBtn').off('click').on('click', function(e){
-  e.preventDefault();
-  const lectureId = this.dataset.lectureId;
-  const lectureType = this.dataset.lectureType;
-  $.get(`/lectures/lecture/${lectureType}/${lectureId}/edit/`, function(resp){
-    if(resp.success){
-      const l = resp.lecture;
-      $('#editLectureId').val(l.id);
-      $('#editLectureTitle').val(l.title);
-      $('#editLectureDescription').val(l.description);
-      $('#editLectureOrder').val(l.order);
-      if (lectureType === 'basic') {
-        $('#editDisciplineWrap').show();
-        $('#editLectureDiscipline').val(l.discipline_id);
-      } else {
-        $('#editDisciplineWrap').hide();
-      }
-      var modal = new bootstrap.Modal(document.getElementById('editLectureModal'));
-      modal.show();
-    } else {
-      alert('Failed to load lecture data');
-    }
-  });
-});
-
-// Submit edit form via AJAX (multipart for file)
-$('#editLectureForm').on('submit', function(e){
-  e.preventDefault();
-  const lectureId = $('#editLectureId').val();
-  // get lectureType from currently editing (we stored on edit button earlier)
-  const lectureType = $('#editLectureBtn').data('lecture-type');
-  const formData = new FormData(this);
-  // CSRF token header for Django
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-  $.ajax({
-    url: `/lectures/lecture/${lectureType}/${lectureId}/edit/`,
-    type: 'POST',
-    data: formData,
-    processData: false,
-    contentType: false,
-    headers: {'X-CSRFToken': csrftoken},
-    success: function(resp){
+  // ---------- Edit Lecture flow ----------
+  // open edit modal: fetch data via GET and populate
+  $('#editLectureBtn').off('click').on('click', function(e){
+    e.preventDefault();
+    const lectureId = this.dataset.lectureId;
+    const lectureType = this.dataset.lectureType;
+    if(!lectureId) return alert('Lecture id missing');
+    $.get(`/lectures/lecture/${lectureType}/${lectureId}/edit/`, function(resp){
       if(resp.success){
-        // تحديث السطر في الـ list مباشرًا (أسرع) — أو إعادة تحميل الصفحة
-        // هنا نحدّث title و description داخل العنصر اللي يحمل data-id
-        const li = $(`#lecturesList li[data-id="${lectureId}"]`);
-        li.attr('data-title', $('#editLectureTitle').val());
-        li.attr('data-description', $('#editLectureDescription').val());
-        li.find('strong').first().text($('#editLectureTitle').val());
-        // اغلق المودال
-        var eModal = bootstrap.Modal.getInstance(document.getElementById('editLectureModal'));
-        eModal.hide();
-        // اعادة تحميل تفاصيل المودال المفتوح لو لازم
-        // loadLectureDetails(li[0], /* index */ 0);
+        const l = resp.lecture;
+        $('#editLectureId').val(l.id);
+        $('#editLectureTitle').val(l.title);
+        $('#editLectureDescription').val(l.description);
+        $('#editLectureOrder').val(l.order);
+        if (lectureType === 'basic') {
+          $('#editDisciplineWrap').show();
+          $('#editLectureDiscipline').val(l.discipline_id);
+        } else {
+          $('#editDisciplineWrap').hide();
+        }
+        var modal = new bootstrap.Modal(document.getElementById('editLectureModal'));
+        modal.show();
       } else {
-        alert('Update failed: ' + (resp.error || 'Unknown'));
+        alert('Failed to load lecture data');
       }
-    },
-    error: function(xhr){
-      alert('Update failed. Check console.');
-      console.error(xhr);
-    }
+    });
   });
-});
 
-// Delete button -> confirm then POST
-$('#deleteLectureBtn').off('click').on('click', function(e){
-  e.preventDefault();
-  const lectureId = this.dataset.lectureId;
-  const lectureType = this.dataset.lectureType;
-  if(!confirm('Are you sure you want to delete this lecture? This cannot be undone.')) return;
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  // submit edit form
+  $('#editLectureForm').on('submit', function(e){
+    e.preventDefault();
+    const lectureId = $('#editLectureId').val();
+    const lectureType = document.getElementById('editLectureBtn').dataset.lectureType;
+    const formData = new FormData(this);
+    const csrftoken = getCSRF();
 
-  $.ajax({
-    url: `/lectures/lecture/${lectureType}/${lectureId}/delete/`,
-    type: 'POST',
-    headers: {'X-CSRFToken': csrftoken},
-    success: function(resp){
-      if(resp.success){
-        // remove item from list and close modal
-        $(`#lecturesList li[data-id="${lectureId}"]`).remove();
-        var curModal = bootstrap.Modal.getInstance(document.getElementById('lectureDetailModal'));
-        curModal.hide();
-        alert('Lecture deleted');
+    $.ajax({
+      url: `/lectures/lecture/${lectureType}/${lectureId}/edit/`,
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      headers: {'X-CSRFToken': csrftoken},
+      success: function(resp){
+        if(resp.success){
+          const li = $(`#lecturesList li[data-id="${lectureId}"]`);
+          li.attr('data-title', $('#editLectureTitle').val());
+          li.attr('data-description', $('#editLectureDescription').val());
+          li.find('strong').first().text($('#editLectureTitle').val());
+          var eModal = bootstrap.Modal.getInstance(document.getElementById('editLectureModal'));
+          eModal.hide();
+        } else {
+          alert('Update failed: ' + (resp.error || 'Unknown'));
+        }
+      },
+      error: function(xhr){
+        alert('Update failed. Check console.');
+        console.error(xhr);
+      }
+    });
+  });
+
+  // delete lecture
+  $('#deleteLectureBtn').off('click').on('click', function(e){
+    e.preventDefault();
+    const lectureId = this.dataset.lectureId;
+    const lectureType = this.dataset.lectureType;
+    if(!confirm('Are you sure you want to delete this lecture? This cannot be undone.')) return;
+    const csrftoken = getCSRF();
+    $.ajax({
+      url: `/lectures/lecture/${lectureType}/${lectureId}/delete/`,
+      type: 'POST',
+      headers: {'X-CSRFToken': csrftoken},
+      success: function(resp){
+        if(resp.success){
+          $(`#lecturesList li[data-id="${lectureId}"]`).remove();
+          var curModal = bootstrap.Modal.getInstance(document.getElementById('lectureDetailModal'));
+          curModal.hide();
+          alert('Lecture deleted');
+        } else {
+          alert('Delete failed: ' + (resp.error || 'Unknown'));
+        }
+      },
+      error: function(xhr){
+        alert('Delete failed. Check console.');
+        console.error(xhr);
+      }
+    });
+  });
+
+  // ---------- Quiz create / question create (inside lectureDetailModal) ----------
+  let currentQuizId = null;
+
+  $('#quizCreateBtn').on('click', function(){
+    const title = $('#quiz_create_title').val().trim();
+    if(!title) return alert('Enter quiz title');
+    $.post(`/lectures/quiz/create/`, {
+      lecture_id: currentLectureId,
+      title: title,
+      csrfmiddlewaretoken: getCSRF()
+    }).done(res => {
+      if (res.success) {
+        currentQuizId = res.quiz_id;
+        $('#currentQuizTitle').text(title);
+        $('#quizQuestionsArea').show();
+        $('#createQuizArea').hide();
+        // add newly created quiz to the list visually
+        const li = document.createElement('li');
+        li.className = "list-group-item openQuizModal";
+        li.style.cursor = "pointer";
+        li.dataset.quizId = currentQuizId;
+        li.textContent = title;
+        document.getElementById('lectureQuizzesList').appendChild(li);
       } else {
-        alert('Delete failed: ' + (resp.error || 'Unknown'));
+        alert('Failed to create quiz');
       }
-    },
-    error: function(xhr){
-      alert('Delete failed. Check console.');
-      console.error(xhr);
-    }
+    }).fail(function(){ alert('Failed to create quiz'); });
   });
-});
 
-});
+  // open create question area
+  $('#openCreateQuestionBtn').on('click', function(){ $('#createQuestionArea').show(); });
+
+  // cancel create question
+  $('#cancelCreateQuestionBtn').on('click', function(){ $('#createQuestionArea').hide(); });
+
+  // save create question
+  $('#saveCreateQuestionBtn').on('click', function(){
+    if(!currentQuizId) return alert('No quiz selected');
+    $.post(`/lectures/question/create/`, {
+      quiz_id: currentQuizId,
+      text: $("#createQuestionText").val(),
+      option1: $("#create_option1").val(),
+      option2: $("#create_option2").val(),
+      option3: $("#create_option3").val(),
+      option4: $("#create_option4").val(),
+      correct: $("#create_correctAnswer").val(),
+      csrfmiddlewaretoken: getCSRF()
+    }).done(res => {
+      if (res.success) {
+        $("#questionsList").append(`<li class="list-group-item">${res.question_text}</li>`);
+        $("#createQuestionArea").hide();
+      } else alert('Failed to save question');
+    }).fail(function(){ alert('Failed to save question'); });
+  });
+
+  // ---------- Open quiz detail modal when clicking a quiz in lecture modal ----------
+  $(document).on("click", ".openQuizModal", function () {
+    let quizId = $(this).data("quizId") || $(this).data("quiz-id");
+    currentQuizId = quizId;
+    if(!quizId) return alert('Quiz id missing');
+
+    $.get(`/lectures/quiz/${quizId}/details/`, function (data) {
+        if (data.success) {
+            // set title
+            $("#quizDetailTitle").text(data.quiz.title);
+
+            // questions
+            let qList = $("#quizQuestionsList");
+            qList.empty();
+            data.quiz.questions.forEach(q => {
+                let li = $(`<li class="list-group-item" data-question-id="${q.id}"></li>`);
+                li.append(`${q.text}`);
+                li.append(`<button class="btn btn-sm btn-warning float-end ms-2 editQuestionBtn">Edit</button>`);
+                li.append(`<button class="btn btn-sm btn-danger float-end deleteQuestionBtn">Delete</button>`);
+                qList.append(li);
+            });
+
+            // show modal
+            var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("quizDetailModal"));
+            modal.show();
+        } else {
+            alert('Failed to load quiz.');
+        }
+    }).fail(function(){ alert('Failed to load quiz.'); });
+  });
+
+  // delete quiz
+  $('#deleteQuizBtn').on('click', function() {
+    if(!currentQuizId) return alert('No quiz selected');
+    if(!confirm('Are you sure you want to delete this quiz?')) return;
+    $.post(`/lectures/quiz/${currentQuizId}/delete/`, {
+        csrfmiddlewaretoken: getCSRF()
+    }).done(res => {
+        if(res.success){
+            $(`li[data-quiz-id="${currentQuizId}"]`).remove();
+            var modal = bootstrap.Modal.getInstance(document.getElementById('quizDetailModal'));
+            modal.hide();
+        } else alert('Failed to delete quiz.');
+    }).fail(function(){ alert('Failed to delete quiz.'); });
+  });
+
+  // edit / delete question handlers (delegated from quizQuestionsList)
+  $('#quizQuestionsList').on('click', '.editQuestionBtn', function() {
+    const li = $(this).closest('li');
+    const questionId = li.data('question-id');
+    const qText = li.contents().get(0).nodeValue.trim();
+    $('#editQuestionText').val(qText);
+    $('#quizEditQuestionArea').show();
+
+    $('#saveQuizQuestionBtn').off('click').on('click', function() {
+      $.post(`/lectures/question/${questionId}/edit/`, {
+        text: $('#editQuestionText').val(),
+        csrfmiddlewaretoken: getCSRF()
+      }).done(res => {
+        if(res.success){
+          li.contents().get(0).nodeValue = $('#editQuestionText').val() + ' ';
+          $('#quizEditQuestionArea').hide();
+        } else alert('Failed to edit question');
+      }).fail(function(){ alert('Failed to edit question'); });
+    });
+  });
+
+  $('#quizQuestionsList').on('click', '.deleteQuestionBtn', function() {
+    const li = $(this).closest('li');
+    const questionId = li.data('question-id');
+    if(!confirm('Delete this question?')) return;
+    $.post(`/lectures/question/${questionId}/delete/`, {
+      csrfmiddlewaretoken: getCSRF()
+    }).done(res => {
+      if(res.success) li.remove();
+      else alert('Failed to delete question');
+    }).fail(function(){ alert('Failed to delete question'); });
+  });
+
+}); // DOMContentLoaded
 </script>
 {% endblock %}

@@ -932,6 +932,8 @@ from django.shortcuts import render, get_object_or_404
 from .models import Module, BasicLecture, ClinicalLecture, Quiz, Certificate, ModuleEnrollment
 
 
+import json  # <- تأكد من استيراد json
+
 @login_required
 def module_manage(request, module_id):
     module = get_object_or_404(Module, id=module_id)
@@ -939,6 +941,15 @@ def module_manage(request, module_id):
     basic_lectures = module.basiclectures.all()  # related_name = 'basiclectures'
     clinical_lectures = module.clinicallectures.all()  # related_name = 'clinicallectures'
     
+    # أضف هذا الجزء لحفظ عناوين الكويز لكل محاضرة كـ JSON
+    for lec in basic_lectures:
+        quizzes = lec.quizzes.values('id','title')  # فقط id و title
+        lec.quiz_titles_json = json.dumps(list(lec.quizzes.values_list('title', flat=True)))
+
+    for lec in clinical_lectures:
+        quizzes = lec.quizzes.values('id','title')
+        lec.quiz_titles_json = json.dumps(list(lec.quizzes.values_list('title', flat=True)))
+
     # كل الكويزات
     quizzes = Quiz.objects.filter(
         basic_lecture__in=basic_lectures
@@ -963,10 +974,11 @@ def module_manage(request, module_id):
         'quizzes': quizzes,
         'enrollments': enrollments,
         'certificates': certificates,
-        'basic_systems': basic_systems,      # ✅ أضفتها
-        'clinical_systems': clinical_systems, # ✅ أضفتها
+        'basic_systems': basic_systems,
+        'clinical_systems': clinical_systems,
     }
     return render(request, 'model_details_edit.html', context)
+
 from django.shortcuts import get_object_or_404, redirect
 from .models import Module, BasicLecture, ClinicalLecture, Discipline
 
@@ -1131,3 +1143,135 @@ def edit_lecture_ajax(request, lecture_type, lecture_id):
 
     lecture.save()
     return JsonResponse({'success': True, 'message': 'Lecture updated', 'lecture_id': lecture.id})
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from lectures.models import BasicLecture, ClinicalLecture, Quiz
+
+@require_POST
+def create_quiz(request):
+    lecture_id = request.POST.get("lecture_id")
+    title = request.POST.get("title")
+
+    # Try basic lecture first
+    lecture = None
+    lecture_type = None
+
+    try:
+        lecture = BasicLecture.objects.get(id=lecture_id)
+        lecture_type = "basic"
+    except BasicLecture.DoesNotExist:
+        try:
+            lecture = ClinicalLecture.objects.get(id=lecture_id)
+            lecture_type = "clinical"
+        except ClinicalLecture.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Lecture not found"})
+
+    # Create Quiz based on lecture type
+    if lecture_type == "basic":
+        quiz = Quiz.objects.create(
+            lecture_type="basic",
+            basic_lecture=lecture,
+            title=title
+        )
+    else:
+        quiz = Quiz.objects.create(
+            lecture_type="clinical",
+            clinical_lecture=lecture,
+            title=title
+        )
+
+    return JsonResponse({"success": True, "quiz_id": quiz.id})
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from lectures.models import Quiz, Question, Choice
+
+@require_POST
+def create_question(request):
+    quiz_id = request.POST.get("quiz_id")
+    text = request.POST.get("text")
+    correct = request.POST.get("correct")  # رقم الاختيار الصحيح (1–4)
+
+    quiz = Quiz.objects.get(id=quiz_id)
+
+    # Create question
+    q = Question.objects.create(
+        quiz=quiz,
+        text=text
+    )
+
+    # Options
+    options = [
+        request.POST.get("option1"),
+        request.POST.get("option2"),
+        request.POST.get("option3"),
+        request.POST.get("option4"),
+    ]
+
+    # Create choices
+    for i, option_text in enumerate(options, start=1):
+        Choice.objects.create(
+            question=q,
+            text=option_text,
+            is_correct=(str(i) == str(correct))
+        )
+
+    return JsonResponse({
+        "success": True,
+        "question_text": q.text
+    })
+from django.http import JsonResponse
+from .models import Quiz
+def quiz_details(request, quiz_id):
+    quiz = Quiz.objects.get(id=quiz_id)
+    
+    questions = []
+    for q in quiz.questions.all():
+        choices = []
+        for c in q.choices.all():
+            choices.append({
+                "id": c.id,
+                "text": c.text,
+                "is_correct": c.is_correct,
+            })
+
+        questions.append({
+            "id": q.id,
+            "text": q.text,
+            "choices": choices
+        })
+
+    return JsonResponse({
+        "success": True,
+        "quiz": {
+            "id": quiz.id,
+            "title": quiz.title,
+            "questions": questions
+        }
+    })
+def quiz_delete(request, quiz_id):
+    quiz = Quiz.objects.filter(id=quiz_id).first()
+    if not quiz:
+        return JsonResponse({"success": False, "error": "Quiz not found"})
+
+    quiz.delete()
+    return JsonResponse({"success": True})
+
+def question_edit(request, question_id):
+    question = Question.objects.filter(id=question_id).first()
+    if not question:
+        return JsonResponse({"success": False, "error": "Question not found"})
+
+    new_text = request.POST.get("text")
+    if new_text:
+        question.text = new_text
+        question.save()
+
+    return JsonResponse({"success": True})
+def question_delete(request, question_id):
+    question = Question.objects.filter(id=question_id).first()
+    if not question:
+        return JsonResponse({"success": False, "error": "Question not found"})
+
+    question.delete()
+    return JsonResponse({"success": True})
