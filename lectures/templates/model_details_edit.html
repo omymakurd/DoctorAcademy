@@ -213,7 +213,8 @@
             data-discipline="{{ lec.discipline.get_name_display|escapejs }}"
             data-description="{{ lec.description|default:''|escapejs }}"
             data-quizzes='[{% for q in lec.quizzes.all %}{"id":{{ q.id }},"title":"{{ q.title|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
-        >
+            data-cases='[{% for c in lec.case_studies.all %}{"id":{{ c.id }},"title":"{{ c.title|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+></li>
           <div class="d-flex justify-content-between">
             <div><strong>{{ lec.title }}</strong> <span class="badge bg-secondary">Basic</span></div>
             <div class="text-muted small">{{ lec.order }}</div>
@@ -229,6 +230,8 @@
             data-video-url="{% if lec.video_file %}{{ lec.video_file.url }}{% elif lec.video_url %}{{ lec.video_url }}{% else %}#{% endif %}"
             data-description="{{ lec.description|default:''|escapejs }}"
             data-quizzes='[{% for q in lec.quizzes.all %}{"id":{{ q.id }},"title":"{{ q.title|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+           data-cases='[{% for c in lec.case_studies.all %}{"id":{{ c.id }},"title":"{{ c.title|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+
         >
           <div class="d-flex justify-content-between">
             <div><strong>{{ lec.title }}</strong> <span class="badge bg-secondary">Clinical</span></div>
@@ -322,7 +325,69 @@
 </div>
 
           <h6 class="fw-bold">Case Studies</h6>
-          <ul id="lectureCasesList" class="list-group"></ul>
+          <ul id="lectureCasesList" class="list-group">
+    <li class="list-group-item caseStudyItem" data-case-id="3">Case Title</li>
+</ul>
+
+            <!-- Add Case Study Modal -->
+<!-- Add / Edit Case Study Modal -->
+<div class="modal fade" id="addCaseModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <form id="addCaseForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Case Study</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <input type="hidden" id="caseLectureId" name="lecture_id">
+          <input type="hidden" id="caseLectureType" name="lecture_type">
+
+          <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" id="caseTitle" name="title" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Symptoms</label>
+            <textarea id="caseSymptoms" name="symptoms" class="form-control" rows="3"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Analysis</label>
+            <textarea id="caseAnalysis" name="analysis" class="form-control" rows="3"></textarea>
+          </div>
+
+          
+
+          <div class="mb-3">
+            <label class="form-label">Video URL</label>
+            <input type="text" id="caseVideoUrl" name="video_url" class="form-control">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Attachment</label>
+            <input type="file" id="caseAttachment" name="attachment" class="form-control">
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<button class="btn btn-success mb-2" id="openAddCaseBtn">+ Add Case Study</button>
+
 
         </div>
 
@@ -340,6 +405,39 @@
       </div>
     </div>
   </div>
+<!-- Case Study Details Modal -->
+<div class="modal fade" id="caseDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Case Study Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <h5 id="detailTitle"></h5>
+        <p><strong>Symptoms:</strong></p>
+        <p id="detailSymptoms"></p>
+
+        <p><strong>Analysis:</strong></p>
+        <p id="detailAnalysis"></p>
+
+        <p><strong>Video URL:</strong></p>
+        <p><a id="detailVideoUrl" href="#" target="_blank"></a></p>
+
+      </div>
+
+      <div class="modal-footer">
+        <button id="editCaseBtn" class="btn btn-warning">Edit</button>
+        <button id="deleteCaseBtn" class="btn btn-danger">Delete</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
  <!-- Quiz Detail Modal -->
 <div class="modal fade" id="quizDetailModal" tabindex="-1" aria-hidden="true">
@@ -573,11 +671,18 @@ document.addEventListener("DOMContentLoaded", function() {
     const cList = document.getElementById("lectureCasesList");
     cList.innerHTML = "";
     cases.forEach(c => {
-      const li = document.createElement('li');
-      li.className = "list-group-item";
-      li.textContent = (typeof c === 'object' && c.title) ? c.title : c;
-      cList.appendChild(li);
-    });
+  const li = document.createElement('li');
+  li.className = "list-group-item caseStudyItem";
+
+  if (typeof c === 'object') {
+    li.dataset.caseId = c.id;
+    li.textContent = c.title;
+  } else {
+    li.textContent = c;
+  }
+
+  cList.appendChild(li);
+});
 
     // navigation handlers
     setupNavigation(index);
@@ -821,7 +926,128 @@ document.addEventListener("DOMContentLoaded", function() {
       else alert('Failed to delete question');
     }).fail(function(){ alert('Failed to delete question'); });
   });
+  
+// open add case modal
+$('#openAddCaseBtn').on('click', function(){
+  $('#caseLectureId').val(currentLectureId);
+  $('#caseLectureType').val(document.getElementById('editLectureBtn').dataset.lectureType);
+  $('#addCaseForm')[0].reset();
+  var modal = new bootstrap.Modal(document.getElementById('addCaseModal'));
+  modal.show();
+});
+
+// submit add case
+let currentCaseId = null;
+
+// فتح المودال لإضافة Case Study
+$(document).on('click', '.open-add-case', function(){
+    currentCaseId = null;
+    $('#addCaseForm')[0].reset();
+    $('#caseLectureId').val($(this).data('lectureId'));
+    $('#caseLectureType').val($(this).data('lectureType'));
+    new bootstrap.Modal('#addCaseModal').show();
+});
+
+// submit (add أو edit)
+$('#addCaseForm').on('submit', function(e){
+  e.preventDefault();
+
+  const formData = new FormData(this);
+  const url = currentCaseId 
+      ? `/lectures/case_study/${currentCaseId}/edit/` 
+      : '/lectures/case_study/create/';
+
+  $.ajax({
+    url: url,
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    headers: {'X-CSRFToken': getCSRF()},
+    success: function(resp){
+      if(resp.success){
+        if(currentCaseId){
+          // تحديث عنصر قديم
+          $(`.caseStudyItem[data-case-id="${currentCaseId}"]`).text(resp.title);
+        } else {
+          // إضافة عنصر جديد
+          $('#lectureCasesList').append(`
+            <li class="list-group-item caseStudyItem" data-case-id="${resp.case_id}">
+              ${resp.title}
+            </li>
+          `);
+        }
+        currentCaseId = null;
+        bootstrap.Modal.getInstance($('#addCaseModal')[0]).hide();
+      }
+    }
+  });
+});
+
+
+
+
+$(document).on('click', '.caseStudyItem', function () {
+    selectedCaseId = $(this).data('case-id');
+
+    $.get(`/lectures/case_study/${selectedCaseId}/edit/`, function (resp) {
+        if (resp.success) {
+            const c = resp.case;
+
+            $('#detailTitle').text(c.title);
+            $('#detailSymptoms').text(c.symptoms || "No symptoms");
+            $('#detailAnalysis').text(c.analysis || "No analysis");
+
+            if (c.video_url) {
+                $('#detailVideoUrl').text(c.video_url).attr('href', c.video_url);
+            } else {
+                $('#detailVideoUrl').text("No video").attr('href', '#');
+            }
+
+            new bootstrap.Modal('#caseDetailsModal').show();
+        }
+    });
+});
+$('#deleteCaseBtn').on('click', function () {
+    if (!confirm("Are you sure?")) return;
+
+    $.post(`/lectures/case_study/${selectedCaseId}/delete/`, {
+        csrfmiddlewaretoken: getCSRF()
+    }, function (res) {
+        if (res.success) {
+            $(`.caseStudyItem[data-case-id="${selectedCaseId}"]`).remove();
+            $('#caseDetailsModal').modal('hide');
+        }
+    });
+});
+
+$('#editCaseBtn').on('click', function () {
+    $('#caseDetailsModal').modal('hide');
+
+    $.get(`/lectures/case_study/${selectedCaseId}/edit/`, function (resp) {
+        if (resp.success) {
+            const c = resp.case;
+
+            currentCaseId = selectedCaseId;
+
+            $('#caseTitle').val(c.title);
+            $('#caseSymptoms').val(c.symptoms);
+            $('#caseAnalysis').val(c.analysis);
+            $('#caseVideoUrl').val(c.video_url || '');
+            $('#caseLectureId').val(c.lecture_id);
+            $('#caseLectureType').val(c.lecture_type);
+
+            new bootstrap.Modal('#addCaseModal').show();
+        }
+    });
+});
+
+
 
 }); // DOMContentLoaded
+</script>
+<script>
+   
+
 </script>
 {% endblock %}

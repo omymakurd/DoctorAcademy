@@ -127,25 +127,11 @@
     </a>
 </li>
 
-                            {% if module.basic_system %}
-<li><a href="{% url 'lectures:add_basic_lecture' module.id %}" class="dropdown-item">+ Add Basic Lecture</a></li>
-{% endif %}
+                          
 
-{% if module.clinical_system %}
-<li><a href="{% url 'lectures:add_clinical_lecture' module.id %}" class="dropdown-item">Add Clinical Lecture</a></li>
-{% endif %}
                             
-                            <li><a href="#" 
-   class="dropdown-item edit-module-btn"
-   data-id="{{ module.id }}"
-   data-bs-toggle="modal"
-   data-bs-target="#editModuleModal">
-   Edit Module
-</a>
-
-</li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a href="{% url 'lectures:delete_module' module.id %}" class="dropdown-item text-danger">Delete</a></li>
+                           
+                            
                         </ul>
                     </div>
                 </div>

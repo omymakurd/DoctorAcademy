@@ -1275,3 +1275,103 @@ def question_delete(request, question_id):
 
     question.delete()
     return JsonResponse({"success": True})
+
+@login_required
+def create_case_study(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        symptoms = request.POST.get('symptoms', '')
+        analysis = request.POST.get('analysis', '')
+
+        lecture_id = request.POST.get('lecture_id')
+        lecture_type = request.POST.get('lecture_type')
+
+        # تحديد المحاضرة
+        basic_lecture = None
+        clinical_lecture = None
+
+        if lecture_type == 'basic':
+            lecture = get_object_or_404(BasicLecture, id=lecture_id)
+            basic_lecture = lecture
+            discipline = lecture.discipline   # ← فقط للباسيك
+        elif lecture_type == 'clinical':
+            lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+            clinical_lecture = lecture
+            discipline = None  # ← الكلينكال ما إلها discipline
+        else:
+            return JsonResponse({'success': False, 'error': 'Invalid lecture type'})
+
+        case = CaseStudy.objects.create(
+            title=title,
+            symptoms=symptoms,
+            analysis=analysis,
+            discipline=discipline,
+            basic_lecture=basic_lecture,
+            clinical_lecture=clinical_lecture,
+            created_by=request.user,
+        )
+
+        # الملفات
+        if request.FILES.get('video'):
+            case.video = request.FILES['video']
+        if request.FILES.get('attachment'):
+            case.attachment = request.FILES['attachment']
+
+        video_url = request.POST.get('video_url')
+        if video_url:
+            case.video_url = video_url
+
+        case.save()
+
+        return JsonResponse({'success': True, 'case_id': case.id, 'title': case.title})
+
+    return JsonResponse({'success': False, 'error': 'Invalid method'})
+
+
+@login_required
+def edit_case_study(request, case_id):
+    case = get_object_or_404(CaseStudy, id=case_id)
+
+    if request.method == 'GET':
+        data = {
+            'success': True,
+            'case': {
+                'title': case.title,
+                'symptoms': case.symptoms,
+                'analysis': case.analysis,
+                'video_url': case.video_url,
+                'lecture_id': case.basic_lecture.id if case.basic_lecture else case.clinical_lecture.id,
+                'lecture_type': 'basic' if case.basic_lecture else 'clinical',
+            }
+        }
+        return JsonResponse(data)
+
+    elif request.method == 'POST':
+        case.title = request.POST.get('title')
+        case.symptoms = request.POST.get('symptoms', '')
+        case.analysis = request.POST.get('analysis', '')
+
+        # لا نعدل discipline نهائياً لأنه مرتبط بالمحاضرة
+        # case.discipline = case.discipline  ← غير ضرورية
+
+        if request.FILES.get('video'):
+            case.video = request.FILES['video']
+        if request.FILES.get('attachment'):
+            case.attachment = request.FILES['attachment']
+
+        video_url = request.POST.get('video_url')
+        case.video_url = video_url if video_url else None
+
+        case.save()
+
+        return JsonResponse({'success': True, 'title': case.title})
+
+    return JsonResponse({'success': False, 'error': 'Invalid method'})
+
+@login_required
+def delete_case_study(request, case_id):
+    if request.method == 'POST':
+        case = get_object_or_404(CaseStudy, id=case_id)
+        case.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'Invalid method'})

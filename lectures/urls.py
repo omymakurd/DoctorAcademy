@@ -46,5 +46,8 @@ urlpatterns = [
    path("quiz/<int:quiz_id>/delete/", views.quiz_delete, name="quiz_delete"),
    path("question/<int:question_id>/edit/", views.question_edit, name="question_edit"),
    path("question/<int:question_id>/delete/", views.question_delete, name="question_delete"),
+   path('case_study/create/', views.create_case_study, name='create_case_study'),
+   path('case_study/<int:case_id>/edit/', views.edit_case_study, name='edit_case_study'),
+   path('case_study/<int:case_id>/delete/', views.delete_case_study, name='delete_case_study'),
 
     ]
