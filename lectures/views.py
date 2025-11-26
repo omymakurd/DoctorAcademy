@@ -1278,55 +1278,63 @@ def question_delete(request, question_id):
 
 @login_required
 def create_case_study(request):
-    if request.method == 'POST':
-        title = request.POST.get('title')
-        symptoms = request.POST.get('symptoms', '')
-        analysis = request.POST.get('analysis', '')
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid method'})
 
-        lecture_id = request.POST.get('lecture_id')
-        lecture_type = request.POST.get('lecture_type')
+    title = request.POST.get('title')
+    symptoms = request.POST.get('symptoms', '')
+    analysis = request.POST.get('analysis', '')
 
-        # تحديد المحاضرة
-        basic_lecture = None
-        clinical_lecture = None
+    lecture_id = request.POST.get('lecture_id')
+    lecture_type = request.POST.get('lecture_type')
 
-        if lecture_type == 'basic':
-            lecture = get_object_or_404(BasicLecture, id=lecture_id)
-            basic_lecture = lecture
-            discipline = lecture.discipline   # ← فقط للباسيك
-        elif lecture_type == 'clinical':
-            lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
-            clinical_lecture = lecture
-            discipline = None  # ← الكلينكال ما إلها discipline
-        else:
-            return JsonResponse({'success': False, 'error': 'Invalid lecture type'})
+    # تهيئة المتغيرات
+    basic_lecture = None
+    clinical_lecture = None
+    discipline = 'anatomy'  # قيمة افتراضية
 
-        case = CaseStudy.objects.create(
-            title=title,
-            symptoms=symptoms,
-            analysis=analysis,
-            discipline=discipline,
-            basic_lecture=basic_lecture,
-            clinical_lecture=clinical_lecture,
-            created_by=request.user,
-        )
+    # تحديد المحاضرة ونوع الـ discipline
+    if lecture_type == 'basic':
+        lecture = get_object_or_404(BasicLecture, id=lecture_id)
+        basic_lecture = lecture
 
-        # الملفات
-        if request.FILES.get('video'):
-            case.video = request.FILES['video']
-        if request.FILES.get('attachment'):
-            case.attachment = request.FILES['attachment']
+        # هنا الـ discipline عبارة عن Object → نأخذ name فقط
+        discipline = lecture.discipline.name.lower()
 
-        video_url = request.POST.get('video_url')
-        if video_url:
-            case.video_url = video_url
+    elif lecture_type == 'clinical':
+        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+        clinical_lecture = lecture
+        # بإمكانك لاحقًا تحديد discipline للكلينيكال إذا احتجتِ
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid lecture type'})
 
-        case.save()
+    # إنشاء الكيس ستادي
+    case = CaseStudy.objects.create(
+        title=title,
+        symptoms=symptoms,
+        analysis=analysis,
+        discipline=discipline,  # ← الآن القيمة سليمة 100%
+        basic_lecture=basic_lecture,
+        clinical_lecture=clinical_lecture,
+        created_by=request.user,
+    )
 
-        return JsonResponse({'success': True, 'case_id': case.id, 'title': case.title})
+    # حفظ الفيديو والملفات
+    video_file = request.FILES.get('video')
+    if video_file:
+        case.video = video_file
 
-    return JsonResponse({'success': False, 'error': 'Invalid method'})
+    attachment_file = request.FILES.get('attachment')
+    if attachment_file:
+        case.attachment = attachment_file
 
+    video_url = request.POST.get('video_url')
+    if video_url:
+        case.video_url = video_url
+
+    case.save()
+
+    return JsonResponse({'success': True, 'case_id': case.id, 'title': case.title})
 
 @login_required
 def edit_case_study(request, case_id):
