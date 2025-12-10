@@ -478,3 +478,15 @@ class QuizAnswer(models.Model):
 
     def __str__(self):
         return f"{self.attempt} - Q:{self.question.id}"
+class LectureComment(models.Model):
+    basic_lecture = models.ForeignKey(BasicLecture, null=True, blank=True, on_delete=models.CASCADE, related_name="comments")
+    clinical_lecture = models.ForeignKey(ClinicalLecture, null=True, blank=True, on_delete=models.CASCADE, related_name="comments")
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    is_instructor = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.message[:20]}"

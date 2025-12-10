@@ -45,6 +45,12 @@
         <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">{% trans "Home" %}</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'courses:all_courses' %}">{% trans "Courses" %}</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'lectures:module_list' %}">{% trans "Lectures" %}</a></li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'cases_new:student_case_list' %}">
+    Case Studies
+</a>
+
+        </li>
         <a class="nav-link" href="{% url 'store:store_home' %}">Store</a>
 
         <!-- Language Switcher -->
@@ -164,5 +170,43 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'js/base.js' %}"></script>
 {% block extra_scripts %}{% endblock %}
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyB1NSVarttEhUHtt0fGbj0m-vkp8I9wD-4",
+  authDomain: "docacademy-notifications.firebaseapp.com",
+  projectId: "docacademy-notifications",
+  messagingSenderId: "1059328650722",
+  appId: "1:1059328650722:web:3735cedac4a4cf828d5dbb"
+});
+
+const messaging = firebase.messaging();
+
+// تسجيل Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/firebase-messaging-sw.js');
+}
+
+// طلب إذن الإشعارات
+Notification.requestPermission().then(function(permission) {
+  if (permission === 'granted') {
+    messaging.getToken({ vapidKey: "BHRHOL6nd4XZ3mFojAeVm_SIw72ncJ2YixLzAOPLHZSbEqbpKR6vdPq3oIcCezpTRDjKKaaU8FYN8v2uUX2A2m8" }).then(function(token) {
+
+      fetch('/save-fcm-token/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ token: token })
+      });
+
+    });
+  }
+});
+</script>
+
 </body>
 </html>

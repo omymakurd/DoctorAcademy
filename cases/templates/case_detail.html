@@ -1,0 +1,44 @@
+<!-- case_detail.html -->
+<div class="container py-3">
+    <h4>{{ case.title }}</h4>
+    <p><strong>Discipline:</strong> {{ case.get_discipline_display }}</p>
+    <p><strong>Target Level:</strong> {{ case.target_level }}</p>
+    <p><strong>Session Date:</strong> {{ case.session_date }}</p>
+    <p><strong>Session Time:</strong> {{ case.session_time }}</p>
+    <p><strong>Status:</strong> {{ case.get_approval_status_display }}</p>
+    
+    {% if case.description %}
+        <p><strong>Description:</strong> {{ case.description }}</p>
+    {% endif %}
+    
+    {% if case.learning_objectives %}
+        <p><strong>Learning Objectives:</strong> {{ case.learning_objectives }}</p>
+    {% endif %}
+    
+    {% if case.pdf_file %}
+        <p><strong>PDF File:</strong> <a href="{{ case.pdf_file.url }}" target="_blank">Download</a></p>
+    {% endif %}
+    
+    {% if case.image_file %}
+        <p><strong>Image:</strong></p>
+        <img src="{{ case.image_file.url }}" class="img-fluid" alt="Case Image">
+    {% endif %}
+    
+    {% if case.zoom_link %}
+        <p><strong>Zoom Link:</strong> <a href="{{ case.zoom_link }}" target="_blank">{{ case.zoom_link }}</a></p>
+    {% endif %}
+    
+    {% if case.recording_file %}
+        <p><strong>Recording File:</strong> <a href="{{ case.recording_file.url }}" target="_blank">Download</a></p>
+    {% endif %}
+    
+    {% if case.recording_link %}
+        <p><strong>Recording Link:</strong> <a href="{{ case.recording_link }}" target="_blank">{{ case.recording_link }}</a></p>
+    {% endif %}
+    
+    {% if case.comments_enabled %}
+        <p><strong>Comments:</strong> Enabled</p>
+    {% else %}
+        <p><strong>Comments:</strong> Disabled</p>
+    {% endif %}
+</div>

@@ -43,9 +43,8 @@ from .models import Course, CourseUnit, Enrollment
 from .forms import CourseForm, CourseUnitForm
 from django.urls import reverse
 
-# List courses of current provider
+from notification.notifications import notify_admins  
 
-# Create a new course
 @login_required
 def course_create(request):
     if request.method == 'POST':
@@ -54,6 +53,10 @@ def course_create(request):
             course = form.save(commit=False)
             course.provider = request.user
             course.save()
+            notify_admins(
+                title="New Course Added",
+                message=f"The course '{course.title}' has been added by {request.user.username}."
+            )
             return redirect('courses:course_provider_dashboard')
     else:
         form = CourseForm()
@@ -75,16 +78,22 @@ def course_edit(request, pk):
     return render(request, 'course_form.html', {'form': form, 'create': False, 'course': course})
 
 # Delete course (optional)
+from django.http import JsonResponse
+
 @login_required
 def course_delete(request, pk):
     course = get_object_or_404(Course, pk=pk)
     if course.provider != request.user:
         return HttpResponseForbidden("ليس لديك صلاحية حذف هذا الكورس.")
+    
     if request.method == 'POST':
         course.delete()
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
         return redirect('courses:course_provider_courses')
-
-    return render(request, 'course_confirm_delete.html', {'course': course})
+    
+    # لو وصل GET، ممكن نرجع 405 Method Not Allowed
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 # Manage units for a course
 @login_required

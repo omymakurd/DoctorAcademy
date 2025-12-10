@@ -62,21 +62,61 @@
 
 
       <nav class="nav flex-column">
-        <a class="nav-link {% if request.resolver_match.url_name == 'instructor_dashboard' %}active-link{% endif %}" href="{% url 'lectures:instructor_dashboard' %}">
-          <i class="bi bi-speedometer2 me-2"></i> Dashboard
-        </a>
-        <a class="nav-link" href="{% url 'lectures:module_wizard' %}">
-          <i class="bi bi-plus-circle me-2"></i> Add Lecture / Module
-        </a>
-        <a class="nav-link" href="{% url 'lectures:my_lectures' %}">
-          <i class="bi bi-collection-play me-2"></i> My Lectures
-        </a>
-        <a class="nav-link" href="#"><i class="bi bi-people me-2"></i> Students</a>
-        <a class="nav-link" href="#"><i class="bi bi-wallet2 me-2"></i> Earnings</a>
-        <a class="nav-link" href="#"><i class="bi bi-journal-text me-2"></i> Quizzes</a>
-        <a class="nav-link" href="#"><i class="bi bi-file-earmark-medical me-2"></i> Case Studies</a>
-        <a class="nav-link" href="#"><i class="bi bi-gear me-2"></i> Settings</a>
-      </nav>
+
+  <!-- Dashboard -->
+  <a class="nav-link {% if request.resolver_match.url_name == 'instructor_dashboard' %}active-link{% endif %}" 
+     href="{% url 'lectures:instructor_dashboard' %}">
+    <i class="bi bi-speedometer2 me-2"></i> Dashboard
+  </a>
+
+  <!-- Add Module / Lecture -->
+  <a class="nav-link {% if request.resolver_match.url_name == 'module_wizard' %}active-link{% endif %}" 
+     href="{% url 'lectures:module_wizard' %}">
+    <i class="bi bi-plus-circle me-2"></i> Add Module / Lecture
+  </a>
+
+  <!-- My Lectures -->
+  <a class="nav-link {% if request.resolver_match.url_name == 'my_lectures' %}active-link{% endif %}" 
+     href="{% url 'lectures:my_lectures' %}">
+    <i class="bi bi-collection-play me-2"></i> My Lectures
+  </a>
+
+  <!-- Students -->
+  <a class="nav-link {% if request.resolver_match.url_name == 'students_list' %}active-link{% endif %}" 
+     href="{% url 'lectures:students_list' %}">
+    <i class="bi bi-people me-2"></i> Students
+  </a>
+
+  <!-- Earnings -->
+  <a class="nav-link {% if request.resolver_match.url_name == 'instructor_earnings' %}active-link{% endif %}" 
+     href="{% url 'lectures:instructor_earnings' %}">
+    <i class="bi bi-wallet2 me-2"></i> Earnings
+  </a>
+
+  <!-- Quizzes -->
+  <a class="nav-link {% if request.resolver_match.url_name == 'quizzes_overview' %}active-link{% endif %}" 
+     href="{% url 'lectures:quizzes_overview' %}">
+    <i class="bi bi-journal-text me-2"></i> Quizzes
+  </a>
+
+  <!-- Case Studies -->
+  <a class="nav-link {% if request.resolver_match.url_name == 'case_studies_overview' %}active-link{% endif %}" 
+     href="{% url 'lectures:case_studies_overview' %}">
+    <i class="bi bi-file-earmark-medical me-2"></i> Case Studies
+  </a>
+ <a class="nav-link {% if request.resolver_match.url_name == 'list' %}active-link{% endif %}" 
+     href="{% url 'cases_new:list' %}">
+    <i class="bi bi-file-earmark-medical me-2"></i> General Case Studies
+</a>
+
+
+  <!-- Settings -->
+  <a class="nav-link {% if request.resolver_match.url_name == 'instructor_settings' %}active-link{% endif %}" 
+     href="{% url 'lectures:instructor_settings' %}">
+    <i class="bi bi-gear me-2"></i> Settings
+  </a>
+</nav>
+
 
       <div class="mt-auto pt-3 small text-muted text-center">
         © {{ now|date:"Y" }} Doctor Academy

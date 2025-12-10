@@ -62,9 +62,17 @@
                         <div class="me-2">
                             <strong>{{ avg_rating|floatformat:1 }}</strong> / 5
                         </div>
-                        <div class="text-warning">
-                            {% for i in "12345"|slice:":avg_rating"|make_list %}⭐{% endfor %}
-                        </div>
+                       <div class="text-warning">
+    {% for i in "12345"|make_list %}
+        {% if forloop.counter <= avg_rating|floatformat:0 %}
+            ⭐
+        {% else %}
+            ☆
+        {% endif %}
+    {% endfor %}
+</div>
+
+
                         <div class="ms-2 text-muted">
                             ({{ total_reviews }} Reviews)
                         </div>
@@ -114,8 +122,15 @@
                         <div class="border-bottom pb-2 mb-2">
                             <strong>{{ review.student.username }}</strong> 
                             <span class="text-warning">
-                                {% for i in "12345"|slice:":review.rating"|make_list %}⭐{% endfor %}
-                            </span>
+    {% for i in "12345"|make_list %}
+        {% if forloop.counter <= review.rating %}
+            ⭐
+        {% else %}
+            ☆
+        {% endif %}
+    {% endfor %}
+</span>
+
                             <p class="mb-1">{{ review.comment }}</p>
                             <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
                         </div>
@@ -124,19 +139,64 @@
                     {% endfor %}
 
                     <!-- ====== Add Review Form ====== -->
-                    <form method="POST" action="{% url 'lectures:add_review' current_lecture.id %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="lecture_type" value="{{ current_lecture.lecture_type }}">
+                    <!-- Add Review Form -->
+<form id="reviewForm" method="POST">
+    {% csrf_token %}
+    
+    <div class="d-flex align-items-center mb-2">
+        {% for i in "12345" %}
+            <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}">
+            <label for="star{{ i }}" class="me-2">⭐</label>
+        {% endfor %}
+    </div>
+    <textarea name="comment" id="reviewComment" class="form-control mb-2" rows="2" placeholder="Write a comment..."></textarea>
+    <button type="submit" class="btn btn-success btn-sm">Submit Review</button>
+</form>
 
-                        <div class="d-flex align-items-center mb-2">
-                            {% for i in "12345" %}
-                                <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}">
-                                <label for="star{{ i }}" class="me-2">⭐</label>
-                            {% endfor %}
-                        </div>
-                        <textarea name="comment" class="form-control mb-2" rows="2" placeholder="Write a comment..."></textarea>
-                        <button type="submit" class="btn btn-success btn-sm">Submit Review</button>
-                    </form>
+<!-- مكان عرض الريفيوهات -->
+<div id="reviewsContainer">
+    {% for review in reviews %}
+        <div class="border-bottom pb-2 mb-2">
+            <strong>{{ review.student.username }}</strong> 
+            <span class="text-warning">
+                {% for i in "12345"|slice:":review.rating"|make_list %}⭐{% endfor %}
+            </span>
+            <p class="mb-1">{{ review.comment }}</p>
+            <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+        </div>
+    {% empty %}
+        <p class="text-muted">No reviews yet.</p>
+    {% endfor %}
+</div>
+
+
+                </div>
+            </div>
+
+            <!-- ====== Chat (Communication) Section ====== -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+
+                    <h5 class="fw-bold mb-3">Discussion & Chat</h5>
+
+                    <!-- Chat Messages -->
+                    <div class="chat-box" id="chatBox">
+                        {% for c in current_lecture.comments.all %}
+                            <div class="chat-message {% if c.is_instructor %} instructor {% else %} student {% endif %}">
+                                <div class="bubble">
+                                    <b>{{ c.user.username }}</b><br>
+                                    {{ c.message }}
+                                    <span class="time">{{ c.created_at|date:"H:i" }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input mt-3">
+                        <textarea id="commentText" class="form-control" placeholder="اكتب تعليقك..." rows="2"></textarea>
+                        <button id="sendComment" class="btn btn-primary mt-2 w-100">إرسال</button>
+                    </div>
 
                 </div>
             </div>
@@ -159,4 +219,132 @@
         </div>
     </div>
 </div>
+
+<!-- ====== Chat CSS ====== -->
+<style>
+.chat-box {
+    max-height: 300px;
+    overflow-y: auto;
+    background: #f7f7f7;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.chat-message {
+    margin-bottom: 12px;
+    display: flex;
+}
+
+.chat-message.student {
+    justify-content: flex-start;
+}
+
+.chat-message.instructor {
+    justify-content: flex-end;
+}
+
+.bubble {
+    max-width: 65%;
+    background: #e1ffc7;
+    padding: 10px 14px;
+    border-radius: 12px;
+    position: relative;
+}
+
+.instructor .bubble {
+    background: #d0e8ff;
+}
+
+.time {
+    font-size: 11px;
+    color: #666;
+    float: right;
+    margin-top: 5px;
+}
+
+.chat-input textarea {
+    resize: none;
+}
+</style>
+
+<!-- ====== Load jQuery (Fixes $ not defined) ====== -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- ====== Chat AJAX ====== -->
+<script>
+    $("#sendComment").click(function () {
+        let msg = $("#commentText").val();
+
+        if (!msg.trim()) return;
+
+        $.post(
+            "/lectures/lecture/{{ current_lecture.id }}/comment/add/",
+            {
+                message: msg,
+                lecture_type: "{{ current_lecture.lecture_type }}",
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            function (resp) {
+                if (resp.success) {
+                    $("#chatBox").append(`
+                        <div class="chat-message ${resp.is_instructor ? 'instructor' : 'student'}">
+                            <div class="bubble">
+                                <b>${resp.username}</b><br>
+                                ${resp.message}
+                                <span class="time">${resp.created_at}</span>
+                            </div>
+                        </div>
+                    `);
+
+                    $("#commentText").val("");
+                    $("#chatBox").scrollTop($("#chatBox")[0].scrollHeight);
+                }
+            }
+        );
+    });
+</script>
+<script>
+$("#reviewForm").submit(function(e) {
+    e.preventDefault();
+
+    let rating = $("input[name='rating']:checked").val();
+    let comment = $("#reviewComment").val().trim();
+
+    if (!comment) return;
+    if (!rating) rating = 5;
+
+    // استخدم lecture_type القادم من الـ view
+    let lectureType = "{{ lecture_type }}";
+
+    $.post(
+        "{% url 'lectures:add_review' current_lecture.id %}",
+        {
+            rating: rating,
+            comment: comment,
+            lecture_type: lectureType,
+            csrfmiddlewaretoken: "{{ csrf_token }}"
+        },
+        function(resp) {
+            if (resp.success) {
+                // عرض الريفيو مباشرة في الصفحة
+                $("#reviewsContainer").prepend(`
+                    <div class="border-bottom pb-2 mb-2">
+                        <strong>${resp.username}</strong> 
+                        <span class="text-warning">${"⭐".repeat(resp.rating)}</span>
+                        <p class="mb-1">${resp.comment}</p>
+                        <small class="text-muted">${resp.created_at}</small>
+                    </div>
+                `);
+                $("#reviewComment").val("");
+                // إعادة ضبط الاختيار للنجوم
+                $("input[name='rating']").prop('checked', false);
+            } else {
+                alert("Error adding review: " + (resp.error || "Unknown error"));
+            }
+        }
+    );
+});
+</script>
+
+
 {% endblock %}

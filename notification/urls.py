@@ -2,5 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-   # path('', views.notification_list, name='notification_list'),
+   path('save-fcm-token/', views.save_fcm_token),
+
 ]

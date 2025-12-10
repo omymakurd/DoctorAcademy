@@ -50,4 +50,15 @@ urlpatterns = [
    path('case_study/<int:case_id>/edit/', views.edit_case_study, name='edit_case_study'),
    path('case_study/<int:case_id>/delete/', views.delete_case_study, name='delete_case_study'),
 
+   # Placeholder pages for sidebar
+    path("instructor/students/", views.students_list, name="students_list"),
+    path("instructor/earnings/", views.instructor_earnings, name="instructor_earnings"),
+    path("instructor/quizzes/", views.quizzes_overview, name="quizzes_overview"),
+    path("instructor/cases/", views.case_studies_overview, name="case_studies_overview"),
+    path("instructor/settings/", views.instructor_settings, name="instructor_settings"),
+    
+    path("lecture/<int:lecture_id>/comment/add/", views.add_comment, name="add_comment"),
+
+    
+
     ]

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Case Study Details{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <!-- Case Header -->
+    <h2 class="fw-bold mb-3">{{ case.title }}</h2>
+
+    <p class="text-muted">
+        {{ case.get_discipline_display }} • Level: {{ case.target_level }}
+    </p>
+
+    <p class="small text-secondary mb-2">
+        <i class="bi bi-calendar"></i> {{ case.session_date }}
+        &nbsp; | &nbsp;
+        <i class="bi bi-clock"></i> {{ case.session_time }}
+    </p>
+
+    <hr>
+
+    <!-- Description -->
+    {% if case.description %}
+        <h5 class="fw-bold mt-3">Description</h5>
+        <p>{{ case.description }}</p>
+    {% endif %}
+
+    <!-- Learning Objectives -->
+    {% if case.learning_objectives %}
+        <h5 class="fw-bold mt-3">Learning Objectives</h5>
+        <p>{{ case.learning_objectives }}</p>
+    {% endif %}
+
+    <hr class="my-4">
+
+    <!-- Zoom Embedded -->
+    <h4 class="fw-bold mb-3">Live Session</h4>
+    <div id="zoomMeeting" style="width:100%; height:700px; background:black; border-radius:10px;"></div>
+
+</div>
+
+<!-- SDK Scripts محلي -->
+<script src="{% static 'zoom/react.min.js' %}"></script>
+<script src="{% static 'zoom/react-dom.min.js' %}"></script>
+<script src="{% static 'zoom/zoom-meeting-embedded-2.25.0.min.js' %}"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    if (typeof ZoomMtgEmbedded === "undefined") {
+        console.error("ZoomMtgEmbedded is undefined. SDK did not load!");
+        return;
+    }
+
+    // المتغيرات التي مررناها من الخادم — محمية وغير قابلة للتغيير من جهة العميل
+    const sdkKey = "{{ zoom_sdk_key }}";
+    const signature = "{{ zoom_signature }}";
+    const meetingNumber = "{{ meeting_number }}";
+    const userName = "{{ zoom_user_name|escapejs }}";
+    const role = {{ zoom_role }};
+
+    const client = ZoomMtgEmbedded.createClient();
+
+    client.init({
+        zoomAppRoot: document.getElementById('zoomMeeting'),
+        language: 'en-US',
+    });
+
+    client.join({
+        apiKey: sdkKey,
+        signature: signature,
+        meetingNumber: meetingNumber,
+        userName: userName,
+        passWord: "", // ضع كلمة المرور إن كانت موجودة في DB
+    })
+    .then(() => {
+        console.log("Joined meeting via embedded SDK");
+
+        // 🔒 منع ظهور أزرار لدعوة الطلاب أو نسخ الرابط عندما تكون موجودة
+        const interval = setInterval(() => {
+            const inviteBtn = document.querySelector('[aria-label="Invite others"]');
+            if (inviteBtn) {
+                inviteBtn.style.display = "none";
+                inviteBtn.remove();
+                clearInterval(interval);
+            }
+        }, 500);
+
+    })
+    .catch((err) => {
+        console.error("Zoom join error:", err);
+    });
+});
+</script>
+
+{% endblock %}

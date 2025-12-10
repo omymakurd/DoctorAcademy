@@ -52,12 +52,23 @@ def process_checkout(request, course_id):
 @login_required
 def process_checkout_basic(request, lecture_id):
     lecture = get_object_or_404(BasicLecture, id=lecture_id)
+    module = lecture.module  # السعر موجود هنا وليس على المحاضرة
 
+    # ========== إذا الموديول مجاني ========== 
+    if module.price == 0:
+        ModuleEnrollment.objects.get_or_create(
+            student=request.user,
+            module=module,
+            defaults={"purchased_price": 0},
+        )
+        return redirect('lectures:module_learning', module_id=module.id)
+
+    # ========== الموديول مدفوع (Stripe) ==========
     if request.method == "POST":
         payment = Payment.objects.create(
             student=request.user,
             lecture_basic=lecture,
-            amount=lecture.price,
+            amount=module.price,      # السعر الصحيح
             method='card',
             status='pending'
         )
@@ -68,34 +79,51 @@ def process_checkout_basic(request, lecture_id):
                 'price_data': {
                     'currency': 'egp',
                     'product_data': {'name': lecture.title},
-                    'unit_amount': int(lecture.price * 100),
+                    'unit_amount': int(module.price * 100),   # السعر الصحيح
                 },
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=request.build_absolute_uri(f'/payments/courses/success/?payment_id={payment.id}'),
-            cancel_url=request.build_absolute_uri(f'/payments/courses/cancel/?payment_id={payment.id}'),
+            success_url=request.build_absolute_uri(
+                f'/payments/courses/success/?payment_id={payment.id}'
+            ),
+            cancel_url=request.build_absolute_uri(
+                f'/payments/courses/cancel/?payment_id={payment.id}'
+            ),
         )
 
         payment.transaction_id = checkout_session.id
         payment.save()
         return redirect(checkout_session.url)
 
-    return redirect('lectures:basic_detail', lecture_id)
+    # عودة صحيحة إذا لم يكن POST
+    return redirect('lectures:module_learning', module_id=module.id)
 
 
 # -------------------------
 # Checkout لمحاضرة Clinical
 # -------------------------
+
 @login_required
 def process_checkout_clinical(request, lecture_id):
     lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+    module = lecture.module   # السعر موجود هنا فقط
 
+    # ========== إذا كان الموديول مجاني ==========
+    if module.price == 0:
+        ModuleEnrollment.objects.get_or_create(
+            student=request.user,
+            module=module,
+            defaults={"purchased_price": 0},
+        )
+        return redirect('lectures:module_learning', module_id=module.id)
+
+    # ========== الموديول مدفوع (Stripe) ==========
     if request.method == "POST":
         payment = Payment.objects.create(
             student=request.user,
             lecture_clinical=lecture,
-            amount=lecture.price,
+            amount=module.price,    # السعر الصحيح
             method='card',
             status='pending'
         )
@@ -106,7 +134,7 @@ def process_checkout_clinical(request, lecture_id):
                 'price_data': {
                     'currency': 'egp',
                     'product_data': {'name': lecture.title},
-                    'unit_amount': int(lecture.price * 100),
+                    'unit_amount': int(module.price * 100),   # السعر الصحيح
                 },
                 'quantity': 1,
             }],
@@ -119,7 +147,9 @@ def process_checkout_clinical(request, lecture_id):
         payment.save()
         return redirect(checkout_session.url)
 
-    return redirect('lectures:clinical_detail', lecture_id)
+    # لو وصل هنا بدون POST → رجّعه للتعلم
+    return redirect('lectures:module_learning', module_id=module.id)
+
 
 
 # -------------------------

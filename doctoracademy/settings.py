@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'webinars',
+    
 ]
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 AUTH_USER_MODEL = "users.User"
@@ -157,9 +158,9 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
-ZOOM_ACCOUNT_ID = "w9pi8TP4Sq2VUH_Cqz06Mg"
 ZOOM_CLIENT_ID = "2ayr3KLnQeGC40xyAxU8ug"
 ZOOM_CLIENT_SECRET = "xIiguOlrNfCPwRewEzfEcu00DvHKunN9"
+ZOOM_ACCOUNT_ID = "w9pi8TP4Sq2VUH_Cqz06Mg"
 
 ZOOM_MEETING_SETTINGS = {
     "waiting_room": True,
@@ -174,6 +175,8 @@ USE_TZ = True
 # settings.py
 STRIPE_SECRET_KEY = "sk_test_51SQQPlBeU3yKDNpQXyuAozxpjaw5APGcSfUgO9zfQZR9REm5mGjgTkEcN6kf3RDjF1Y5bUMA1pKCroj8hMbvO4b900JIBNTeed"
 STRIPE_PUBLISHABLE_KEY = "pk_test_51SQQPlBeU3yKDNpQmPb8RiDEKDhGS3ZTgXRLiADJHnlOoHGWzDYYZEeXx2vUG5jgcqyORmDV9OrBq192rcT7owaP00QBueeSGm"
+
+
 
 
 

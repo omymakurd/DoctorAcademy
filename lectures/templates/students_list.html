@@ -1,0 +1,126 @@
+{% extends "dashboards/instructor_base.html" %}
+{% load static %}
+
+{% block title %}Students{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <h2 class="fw-bold mb-4">👨‍🎓 Students Enrolled</h2>
+
+    <!-- Filters Row -->
+    <form method="GET" class="row g-3 mb-4">
+
+        <!-- Search -->
+        <div class="col-md-4">
+            <input type="text" name="search" class="form-control"
+                   placeholder="Search by name or email"
+                   value="{{ search }}">
+        </div>
+
+        <!-- Module Filter -->
+        <div class="col-md-4">
+            <select name="module_id" class="form-select">
+                <option value="">All Modules</option>
+                {% for m in modules %}
+                    <option value="{{ m.id }}"
+                        {% if m.id|stringformat:"s" == selected_module %}selected{% endif %}>
+                        {{ m.title }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Submit -->
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100">Filter</button>
+        </div>
+
+    </form>
+
+    <!-- Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Student</th>
+                            <th>Email</th>
+                            <th>Module</th>
+                            <th>Price</th>
+                            <th>Enrolled</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for enroll in page_obj %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td class="fw-bold">{{ enroll.student.username }}</td>
+                            <td>{{ enroll.student.email }}</td>
+                            <td>{{ enroll.module.title }}</td>
+                            <td>
+                                {% if enroll.purchased_price > 0 %}
+                                    ${{ enroll.purchased_price }}
+                                {% else %}
+                                    <span class="text-success fw-bold">FREE</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ enroll.enrolled_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 text-center text-muted">
+                No students found.
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.previous_page_number }}&search={{ search }}&module_id={{ selected_module }}">
+                    Prev
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                <a class="page-link"
+                   href="?page={{ num }}&search={{ search }}&module_id={{ selected_module }}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.next_page_number }}&search={{ search }}&module_id={{ selected_module }}">
+                    Next
+                </a>
+            </li>
+            {% endif %}
+
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+{% endblock %}

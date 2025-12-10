@@ -37,14 +37,34 @@
 
             <!-- Purchase or Start -->
 {% if user.is_authenticated %}
-    {% if user_enrolled %}
-        <a href="{% url 'lectures:module_learning' module.id %}" class="btn btn-success btn-lg">Start Learning</a>
+
+    {% if module.price == 0 %}
+        <!-- Free Module -->
+        <a href="{% url 'lectures:module_learning' module.id %}" class="btn btn-success btn-lg">
+            Start Learning
+        </a>
+
+    {% elif user_enrolled %}
+        <!-- Already purchased -->
+        <a href="{% url 'lectures:module_learning' module.id %}" class="btn btn-success btn-lg">
+            Start Learning
+        </a>
+
     {% else %}
-        <a href="{% url 'lectures:module_checkout' module.id %}" class="btn btn-primary btn-lg">Buy Module</a>
+        <!-- Paid Module -->
+        <a href="{% url 'lectures:module_checkout' module.id %}" class="btn btn-primary btn-lg">
+            Buy Module
+        </a>
     {% endif %}
+
 {% else %}
-    <a href="/login/" class="btn btn-outline-primary btn-lg">Login to Purchase</a>
+    {% if module.price == 0 %}
+        <a href="/login/" class="btn btn-outline-success btn-lg">Login to Start Free</a>
+    {% else %}
+        <a href="/login/" class="btn btn-outline-primary btn-lg">Login to Purchase</a>
+    {% endif %}
 {% endif %}
+
 
 
         </div>

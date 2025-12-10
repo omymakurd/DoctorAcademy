@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth.decorators import login_required
-from lectures.models import BasicLecture, ClinicalLecture
+from lectures.models import BasicLecture, LectureComment
 from courses.models import Course
 from cases.models import CaseStudy
 from users.models import User
@@ -604,24 +604,33 @@ def add_clinical_lecture(request, module_id):
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
-from .models import Module, BasicLecture, ClinicalLecture
+from django.db.models import Q, Avg
+from .models import Module, BasicLecture, ClinicalLecture, ModuleEnrollment, LectureReview
 from payments.models import Payment
+
 
 @login_required
 def module_learning_view(request, module_id):
     module = get_object_or_404(Module, id=module_id)
 
-    # التأكد من تسجيل الطالب في الموديول
-    if not module.enrollments.filter(student=request.user).exists():
-        return redirect('lectures:module_detail', module_id=module.id)
+    # ✅ إذا الموديول مجاني → enroll تلقائي
+    if module.price == 0:
+        ModuleEnrollment.objects.get_or_create(
+            student=request.user,
+            module=module,
+            defaults={"purchased_price": 0},
+        )
 
-    # جلب جميع المحاضرات
+    # ✅ تأكد من تسجيل الطالب
+    if not ModuleEnrollment.objects.filter(student=request.user, module=module).exists():
+        return redirect("lectures:module_detail", module_id=module.id)
+
+    # ✅ جلب المحاضرات
     basic_lectures = list(BasicLecture.objects.filter(module=module))
     clinical_lectures = list(ClinicalLecture.objects.filter(module=module))
     all_lectures = basic_lectures + clinical_lectures
 
-    # تحديد المحاضرة الحالية
+    # ✅ تحديد المحاضرة الحالية
     lecture_id = request.GET.get("lecture")
     current_lecture = None
     next_lecture = None
@@ -638,23 +647,22 @@ def module_learning_view(request, module_id):
         if len(all_lectures) > 1:
             next_lecture = all_lectures[1]
 
-    # ✅ التحقق من الدفع لكل نوع محاضرة
-    if current_lecture:
+    # ✅ التحقق من الدفع فقط إذا الموديول مدفوع
+    if module.price > 0 and current_lecture:
         payment_exists = Payment.objects.filter(
             student=request.user,
-            status='completed',
-            **({'lecture_clinical': current_lecture} if isinstance(current_lecture, ClinicalLecture)
-               else {'lecture_basic': current_lecture})
+            status="completed",
+            lecture_clinical=current_lecture if isinstance(current_lecture, ClinicalLecture) else None,
+            lecture_basic=current_lecture if isinstance(current_lecture, BasicLecture) else None,
         ).exists()
 
         if not payment_exists:
-            # تحويل الطالب إلى صفحة الدفع المناسبة
             if isinstance(current_lecture, ClinicalLecture):
-                return redirect('payments:stripe_start_clinical', current_lecture.id)
+                return redirect("payments:stripe_start_clinical", current_lecture.id)
             else:
-                return redirect('payments:stripe_start_basic', current_lecture.id)
+                return redirect("payments:stripe_start_basic", current_lecture.id)
 
-    # حساب نسبة التقدم
+    # ✅ حساب التقدم
     completed = request.user.lecture_progress.filter(
         Q(basic_lecture__in=basic_lectures) |
         Q(clinical_lecture__in=clinical_lectures),
@@ -663,55 +671,100 @@ def module_learning_view(request, module_id):
     total_lectures = len(all_lectures)
     progress_percentage = (completed / total_lectures * 100) if total_lectures else 0
 
-    context = {
+    # ✅ جلب الريفيوهات حسب نوع المحاضرة
+    reviews = []
+    avg_rating = 0
+    total_reviews = 0
+
+    if current_lecture:
+        if isinstance(current_lecture, BasicLecture):
+            reviews = current_lecture.reviews.all()
+        else:
+            reviews = current_lecture.reviews.all()
+
+        avg_rating = reviews.aggregate(avg=Avg('rating'))['avg'] or 0
+        total_reviews = reviews.count()
+
+    return render(request, "module_learning.html", {
         "module": module,
         "basic_lectures": basic_lectures,
         "clinical_lectures": clinical_lectures,
         "current_lecture": current_lecture,
         "next_lecture": next_lecture,
         "progress_percentage": progress_percentage,
-    }
-    return render(request, "module_learning.html", context)
+        "reviews": reviews,
+        "avg_rating": avg_rating,
+        "total_reviews": total_reviews,
+    })
 
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import BasicLecture, ClinicalLecture, LectureReview
 
+from django.http import JsonResponse
+from django.utils.timezone import localtime
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from .models import BasicLecture, ClinicalLecture, LectureReview
+
 @login_required
 def add_review(request, lecture_id):
     if request.method != "POST":
-        return redirect("lectures:module_list")  # أو أي صفحة مناسبة
-
-    lecture_type = request.POST.get("lecture_type")
-    
-    if lecture_type == "basic":
-        lecture = get_object_or_404(BasicLecture, id=lecture_id)
-    elif lecture_type == "clinical":
-        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
-    else:
-        # إذا نوع المحاضرة غير صحيح، نرجع المستخدم للصفحة العامة
-        return redirect("lectures:module_list")  
+        return JsonResponse({"success": False, "error": "Invalid request method"})
 
     rating = request.POST.get("rating")
-    comment = request.POST.get("comment", "")
+    comment = request.POST.get("comment", "").strip()
+    lecture_type = request.POST.get("lecture_type")
+
+    if not comment:
+        return JsonResponse({"success": False, "error": "Empty comment"})
+
+    if not rating:
+        rating = 5
+
+    try:
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            rating = 5
+    except ValueError:
+        rating = 5
+
+    # إذا لم يرسل lecture_type أو كان خاطئ، اكتشفه تلقائيًا
+    if lecture_type not in ["basic", "clinical"]:
+        if BasicLecture.objects.filter(id=lecture_id).exists():
+            lecture_type = "basic"
+        elif ClinicalLecture.objects.filter(id=lecture_id).exists():
+            lecture_type = "clinical"
+        else:
+            return JsonResponse({"success": False, "error": "Invalid lecture type"})
 
     if lecture_type == "basic":
-        LectureReview.objects.create(
+        lecture = get_object_or_404(BasicLecture, id=lecture_id)
+        review = LectureReview.objects.create(
             student=request.user,
             basic_lecture=lecture,
             rating=rating,
             comment=comment
         )
-    else:
-        LectureReview.objects.create(
+    else:  # clinical
+        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+        review = LectureReview.objects.create(
             student=request.user,
             clinical_lecture=lecture,
             rating=rating,
             comment=comment
         )
 
-    # بعد الإضافة نرجع المستخدم للصفحة الصحيحة
-    return redirect(f"/lectures/module/{lecture.module.id}/learn/?lecture={lecture.id}")
+    return JsonResponse({
+        "success": True,
+        "username": request.user.username,
+        "rating": review.rating,
+        "comment": review.comment,
+        "created_at": review.created_at.strftime("%b %d, %Y")
+    })
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from .models import Quiz, Question, Choice, QuizAttempt, QuizAnswer
@@ -1383,3 +1436,252 @@ def delete_case_study(request, case_id):
         case.delete()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'error': 'Invalid method'})
+from django.core.paginator import Paginator
+from django.db.models import Q
+
+@login_required
+def students_list(request):
+    modules = Module.objects.filter(instructor=request.user)
+
+    enrollments = ModuleEnrollment.objects.filter(
+        module__in=modules
+    ).select_related("student", "module")
+
+    # Search
+    search = request.GET.get("search", "")
+    if search:
+        enrollments = enrollments.filter(
+            Q(student__username__icontains=search) |
+            Q(student__email__icontains=search)
+        )
+
+    # Module filter
+    module_id = request.GET.get("module_id")
+    if module_id:
+        enrollments = enrollments.filter(module_id=module_id)
+
+    # Pagination
+    paginator = Paginator(enrollments.order_by("-enrolled_at"), 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "students_list.html", {
+        "page_obj": page_obj,
+        "modules": modules,
+        "search": search,
+        "selected_module": module_id,
+    })
+
+
+@login_required
+def instructor_earnings(request):
+    # Get instructor modules
+    modules = Module.objects.filter(instructor=request.user)
+
+    # Base Query: all enrollments (paid or free)
+    earnings_qs = ModuleEnrollment.objects.filter(
+        module__in=modules,
+        purchased_price__gte=0  # ensure numeric
+    ).select_related("student", "module")
+
+    # Date filter
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+
+    if start_date:
+        earnings_qs = earnings_qs.filter(enrolled_at__date__gte=start_date)
+
+    if end_date:
+        earnings_qs = earnings_qs.filter(enrolled_at__date__lte=end_date)
+
+    # Totals
+    total_earnings = earnings_qs.aggregate(total=Sum("purchased_price"))["total"] or 0
+    monthly_earnings = earnings_qs.filter(
+        enrolled_at__month=timezone.now().month,
+        enrolled_at__year=timezone.now().year
+    ).aggregate(month=Sum("purchased_price"))["month"] or 0
+
+    sales_count = earnings_qs.count()
+
+    # Pagination
+    paginator = Paginator(earnings_qs.order_by("-enrolled_at"), 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "earnings.html", {
+        "page_obj": page_obj,
+        "total_earnings": total_earnings,
+        "monthly_earnings": monthly_earnings,
+        "sales_count": sales_count,
+        "start_date": start_date,
+        "end_date": end_date
+    })
+
+
+@login_required
+def quizzes_overview(request):
+    # كل المحاضرات والموديولات الخاصة بالمدرس
+    basic_lectures = BasicLecture.objects.filter(instructor=request.user)
+    clinical_lectures = ClinicalLecture.objects.filter(instructor=request.user)
+    modules = Module.objects.filter(instructor=request.user)
+
+    # فلترة حسب الموديول إذا موجود في GET
+    module_id = request.GET.get("module")
+    if module_id:
+        quizzes = Quiz.objects.filter(
+            Q(basic_lecture__in=basic_lectures) |
+            Q(clinical_lecture__in=clinical_lectures),
+            Q(basic_lecture__module_id=module_id) |
+            Q(clinical_lecture__module_id=module_id)
+        )
+    else:
+        quizzes = Quiz.objects.filter(
+            Q(basic_lecture__in=basic_lectures) |
+            Q(clinical_lecture__in=clinical_lectures)
+        )
+
+    # إحصائيات
+    total_quizzes = quizzes.count()
+    total_questions = Question.objects.filter(quiz__in=quizzes).count()
+    total_attempts = QuizAttempt.objects.filter(quiz__in=quizzes).count()
+
+    # أعلى الكويزات حسب المحاولات
+    top_quizzes = quizzes.annotate(attempts_count=Count('attempts')).order_by('-attempts_count')[:5]
+
+    # Pagination
+    quizzes_with_counts = quizzes.annotate(num_questions=Count('questions')).order_by('-id')
+    paginator = Paginator(quizzes_with_counts, 15)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "quizzes_overview.html", {
+        "page_obj": page_obj,
+        "top_quizzes": top_quizzes,
+        "total_questions": total_questions,
+        "total_attempts": total_attempts,
+        "total_quizzes": total_quizzes,
+        "modules": modules,
+        "selected_module": int(module_id) if module_id else None,
+    })
+
+@login_required
+def case_studies_overview(request):
+    # -------------------------
+    # Filter by module if selected
+    # -------------------------
+    selected_module = request.GET.get('module')
+    case_studies = CaseStudy.objects.all().order_by('-created_at')
+    
+    if selected_module:
+        case_studies = case_studies.filter(
+            basic_lecture_id=selected_module
+        ) | case_studies.filter(
+            clinical_lecture_id=selected_module
+        )
+
+    # -------------------------
+    # Stats
+    # -------------------------
+    total_case_studies = case_studies.count()
+    total_with_videos = case_studies.filter(video__isnull=False).count()
+    total_with_attachments = case_studies.filter(attachment__isnull=False).count()
+
+    # -------------------------
+    # Top case studies (example: latest 5)
+    # -------------------------
+    top_case_studies = case_studies.order_by('-created_at')[:5]
+
+    # -------------------------
+    # Pagination
+    # -------------------------
+    paginator = Paginator(case_studies, 10)  # 10 per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # -------------------------
+    # All modules for filter dropdown
+    # -------------------------
+    basic_modules = BasicLecture.objects.all()
+    clinical_modules = ClinicalLecture.objects.all()
+    modules = list(basic_modules) + list(clinical_modules)
+
+    context = {
+        'modules': modules,
+        'selected_module': int(selected_module) if selected_module else None,
+        'total_case_studies': total_case_studies,
+        'total_with_videos': total_with_videos,
+        'total_with_attachments': total_with_attachments,
+        'top_case_studies': top_case_studies,
+        'page_obj': page_obj,
+    }
+    return render(request, 'case_studies_overview.html', context)
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django import forms
+
+User = get_user_model()
+
+# -------------------------------
+# Form للإعدادات
+# -------------------------------
+class InstructorSettingsForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
+
+@login_required
+def instructor_settings(request):
+    user = request.user
+    if request.method == 'POST':
+        form = InstructorSettingsForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Settings updated successfully!")
+            return redirect('lectures:instructor_settings')
+    else:
+        form = InstructorSettingsForm(instance=user)
+
+    return render(request, "settings.html", {'form': form})
+
+
+
+@login_required
+def add_comment(request, lecture_id):
+    message = request.POST.get("message", "").strip()
+    if not message:
+        return JsonResponse({"success": False, "error": "Empty message"})
+
+    # محاولة إيجاد BasicLecture أولًا
+    try:
+        lecture = BasicLecture.objects.get(id=lecture_id)
+        comment = LectureComment.objects.create(
+            basic_lecture=lecture,
+            user=request.user,
+            message=message,
+            is_instructor=getattr(request.user, "role", None) == "instructor"
+        )
+    except BasicLecture.DoesNotExist:
+        # إذا لم يكن موجود، جرب ClinicalLecture
+        lecture = get_object_or_404(ClinicalLecture, id=lecture_id)
+        comment = LectureComment.objects.create(
+            clinical_lecture=lecture,
+            user=request.user,
+            message=message,
+            is_instructor=getattr(request.user, "role", None) == "instructor"
+        )
+
+    return JsonResponse({
+        "success": True,
+        "message": comment.message,
+        "username": comment.user.username,
+        "is_instructor": comment.is_instructor,
+        "created_at": comment.created_at.strftime("%H:%M")
+    })

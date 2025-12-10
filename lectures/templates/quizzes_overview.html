@@ -1,0 +1,149 @@
+{% extends "dashboards/instructor_base.html" %}
+{% load static %}
+
+{% block title %}Quizzes Overview{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- Header + Module Filter -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">🧪 Quizzes Overview</h2>
+        <form method="get" class="d-flex align-items-center">
+            <select name="module" class="form-select me-2">
+                <option value="">All Modules</option>
+                {% for module in modules %}
+                <option value="{{ module.id }}" {% if selected_module == module.id %}selected{% endif %}>
+                    {{ module.title }}
+                </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6 class="text-muted">Total Quizzes</h6>
+                <h3 class="fw-bold">{{ total_quizzes }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6 class="text-muted">Total Questions</h6>
+                <h3 class="fw-bold">{{ total_questions }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6 class="text-muted">Total Attempts</h6>
+                <h3 class="fw-bold">{{ total_attempts }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Quizzes -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold">⭐ Top Performing Quizzes</div>
+        <div class="card-body p-0">
+            {% if top_quizzes %}
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Quiz</th>
+                        <th>Lecture</th>
+                        <th>Attempts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quiz in top_quizzes %}
+                    <tr>
+                        <td>{{ quiz.title }}</td>
+                        <td>
+                            {% if quiz.basic_lecture %}
+                                {{ quiz.basic_lecture.title }}
+                            {% elif quiz.clinical_lecture %}
+                                {{ quiz.clinical_lecture.title }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ quiz.attempts_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="p-3 text-center text-muted">No quiz attempts yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- All Quizzes Table -->
+    <div class="card shadow-sm">
+        <div class="card-header fw-bold">📘 All Quizzes</div>
+        <div class="card-body p-0">
+            {% if page_obj %}
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Quiz Title</th>
+                        <th>Lecture</th>
+                        <th>Questions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quiz in page_obj %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ quiz.title }}</td>
+                        <td>
+                            {% if quiz.basic_lecture %}
+                                {{ quiz.basic_lecture.title }}
+                            {% elif quiz.clinical_lecture %}
+                                {{ quiz.clinical_lecture.title }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ quiz.num_questions }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="p-3 text-center text-muted">No quizzes found.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if selected_module %}module={{ selected_module }}&{% endif %}page={{ page_obj.previous_page_number }}">Prev</a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?{% if selected_module %}module={{ selected_module }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if selected_module %}module={{ selected_module }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "dashboards/instructor_base.html" %}
+{% load static %}
+
+{% block title %}Case Studies Overview{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- Header + Module Filter -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">📚 Case Studies Overview</h2>
+        <form method="get" class="d-flex align-items-center">
+            <select name="module" class="form-select me-2">
+                <option value="">All Modules</option>
+                {% for module in modules %}
+                <option value="{{ module.id }}" {% if selected_module == module.id %}selected{% endif %}>
+                    {{ module.title }}
+                </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6 class="text-muted">Total Case Studies</h6>
+                <h3 class="fw-bold">{{ total_case_studies }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6 class="text-muted">With Videos</h6>
+                <h3 class="fw-bold">{{ total_with_videos }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6 class="text-muted">With Attachments</h6>
+                <h3 class="fw-bold">{{ total_with_attachments }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Case Studies -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold">⭐ Top Case Studies</div>
+        <div class="card-body p-0">
+            {% if top_case_studies %}
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Lecture</th>
+                        <th>Discipline</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in top_case_studies %}
+                    <tr>
+                        <td>{{ case.title }}</td>
+                        <td>
+                            {% if case.basic_lecture %}
+                                {{ case.basic_lecture.title }}
+                            {% elif case.clinical_lecture %}
+                                {{ case.clinical_lecture.title }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ case.get_discipline_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="p-3 text-center text-muted">No case studies yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- All Case Studies Table -->
+    <div class="card shadow-sm">
+        <div class="card-header fw-bold">📘 All Case Studies</div>
+        <div class="card-body p-0">
+            {% if page_obj %}
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Lecture</th>
+                        <th>Discipline</th>
+                        <th>Media</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in page_obj %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ case.title }}</td>
+                        <td>
+                            {% if case.basic_lecture %}
+                                {{ case.basic_lecture.title }}
+                            {% elif case.clinical_lecture %}
+                                {{ case.clinical_lecture.title }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ case.get_discipline_display }}</td>
+                        <td>
+                            {% if case.get_media_type == "file_video" %}Video File
+                            {% elif case.get_media_type == "external_video" %}External Video
+                            {% elif case.get_media_type == "file_attachment" %}Attachment
+                            {% else %}Text Only{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="p-3 text-center text-muted">No case studies found.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if selected_module %}module={{ selected_module }}&{% endif %}page={{ page_obj.previous_page_number }}">Prev</a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?{% if selected_module %}module={{ selected_module }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if selected_module %}module={{ selected_module }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+{% endblock %}
