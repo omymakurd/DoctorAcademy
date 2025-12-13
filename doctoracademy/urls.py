@@ -20,6 +20,8 @@ from django.urls import path, include
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -43,6 +45,15 @@ urlpatterns = [
 ]
 urlpatterns += [
     path('i18n/', include('django.conf.urls.i18n')),
+     path(
+        'firebase-messaging-sw.js',
+        TemplateView.as_view(
+            template_name="firebase-messaging-sw.js",
+            content_type="application/javascript"
+        ),
+    ),
+
+    
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

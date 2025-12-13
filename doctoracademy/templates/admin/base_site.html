@@ -1,0 +1,208 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}
+  {% if subtitle %}{{ subtitle }} | {% endif %}
+  {{ title }} | {{ site_title|default:_('Django administration') }}
+{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+  <a href="{% url 'admin:index' %}">
+    {{ site_header|default:_('Django administration') }}
+  </a>
+</div>
+{% endblock %}
+
+{% block nav-global %}
+{{ block.super }}
+
+<style>
+#header { overflow: visible !important; }
+
+/* Notification wrapper inside nav */
+#notif-wrapper { position: relative; list-style: none; margin-left: 15px; display: inline-block; }
+.notif-icon { position: relative; font-size: 22px; cursor: pointer; color: #fff; padding: 6px 10px; display: inline-flex; align-items: center; animation: bellIdle 2s infinite; }
+@keyframes bellIdle { 0%,100%{transform:rotate(0);} 96%{transform:rotate(-8deg);} 97%{transform:rotate(8deg);} 98%{transform:rotate(-6deg);} 99%{transform:rotate(6deg);} }
+
+.notif-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #dc3545;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  box-sizing: border-box;
+}
+
+/* Dropdown */
+#notification-dropdown { position: absolute; top: 42px; right: 0; width: 340px; max-height: 420px; background: #fff !important; border-radius: 10px; border: 1px solid #ddd; box-shadow: 0 8px 20px rgba(0,0,0,.2); display: none; z-index: 99999; overflow-y: auto; transition: opacity 0.2s ease-in-out; }
+#notification-dropdown.show { display: block; opacity: 1; }
+
+.notif-header { padding: 10px 12px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; }
+.notif-header span { color: #333; }
+.notif-item { padding: 12px 14px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.3s, color 0.3s; word-wrap: break-word; }
+.notif-item:hover { background: #f7f7f7; }
+.notif-item strong { transition: color 0.3s; }
+.notif-item small { color: #666; }
+.notif-empty { padding: 15px; text-align: center; color: #777; }
+
+/* إشعارات جديدة */
+.notif-item.unread {
+  background-color: #eaf3ff !important; /* أزرق فاتح */
+  font-weight: bold !important;
+}
+.notif-item.unread strong {
+  color: #000 !important;
+}
+
+/* إشعار مقروء */
+.notif-item.notif-read {
+  background-color: #f1f1f1 !important;
+  font-weight: normal !important;
+}
+.notif-item.notif-read strong {
+  color: #666 !important;
+}
+</style>
+
+<ul class="nav navbar-nav ml-auto">
+  <li id="notif-wrapper" class="nav-item">
+    <a id="notifToggle" class="notif-icon nav-link">
+      🔔
+      <span id="notification-badge" class="notif-badge" {% if unread_notifications_count == 0 %}style="display:none"{% endif %}>
+        {{ unread_notifications_count }}
+      </span>
+    </a>
+
+    <div id="notification-dropdown">
+      <div class="notif-header">
+        <span>Notifications</span>
+        <a href="#" id="markAllRead" style="font-size:12px;">Mark all</a>
+      </div>
+
+      <div id="notification-items">
+        {% for notif in request.user.notifications.all|dictsortreversed:"created_at" %}
+          <div class="notif-item {% if not notif.is_read %}unread{% else %}notif-read{% endif %}" data-id="{{ notif.id }}">
+            <strong>{{ notif.title }}</strong><br>
+            <small>{{ notif.message }}</small>
+          </div>
+        {% empty %}
+          <div class="notif-empty">No notifications</div>
+        {% endfor %}
+      </div>
+    </div>
+  </li>
+</ul>
+
+<script>
+let unreadCount = {{ unread_notifications_count|default:0 }};
+
+// تحديث العداد
+function updateBadge(count) {
+  unreadCount = parseInt(count) || 0;
+  const badge = document.getElementById('notification-badge');
+  if (unreadCount > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = unreadCount;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// تعليم إشعار فردي كمقروء
+function markItemRead(item) {
+  if (item.classList.contains('unread')) {
+    fetch(`/notification/mark-read/${item.dataset.id}/`).then(() => {
+      item.classList.remove('unread');
+      item.classList.add('notif-read');
+      updateBadge(unreadCount - 1);
+    });
+  }
+}
+
+// ربط click لكل إشعار
+function bindNotifClick(item) {
+  item.addEventListener('click', () => markItemRead(item));
+}
+document.querySelectorAll('.notif-item').forEach(bindNotifClick);
+
+// فتح وإغلاق القائمة
+const toggle = document.getElementById('notifToggle');
+const dropdown = document.getElementById('notification-dropdown');
+
+toggle.addEventListener('click', e => {
+  e.stopPropagation();
+  dropdown.classList.toggle('show');
+
+  if (dropdown.classList.contains('show')) {
+    fetch('/notification/mark-all-read/').then(() => {
+      document.querySelectorAll('.notif-item.unread').forEach(item => {
+        item.classList.remove('unread');
+        item.classList.add('notif-read');
+      });
+      updateBadge(0);
+    });
+  }
+});
+
+document.addEventListener('click', () => dropdown.classList.remove('show'));
+
+// Mark all
+document.getElementById('markAllRead').addEventListener('click', e => {
+  e.preventDefault();
+  fetch('/notification/mark-all-read/').then(() => {
+    document.querySelectorAll('.notif-item.unread').forEach(item => {
+      item.classList.remove('unread');
+      item.classList.add('notif-read');
+    });
+    updateBadge(0);
+  });
+});
+
+// تحديث العداد كل 15 ثانية
+function refreshUnreadCount() {
+  fetch('/notification/unread-count/')
+    .then(r => r.json())
+    .then(data => updateBadge(data.count));
+}
+refreshUnreadCount();
+setInterval(refreshUnreadCount, 15000);
+
+// Firebase notifications
+firebase.initializeApp({
+  apiKey: "AIzaSyB1NSVarttEhUHtt0fGbj0m-vkp8I9wD-4",
+  authDomain: "docacademy-notifications.firebaseapp.com",
+  projectId: "docacademy-notifications",
+  messagingSenderId: "1059328650722",
+  appId: "1:1059328650722:web:3735cedac4a4cf828d5dbb"
+});
+
+const messaging = firebase.messaging();
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/firebase-messaging-sw.js');
+}
+
+messaging.onMessage(payload => {
+  const list = document.getElementById('notification-items');
+  updateBadge(unreadCount + 1);
+
+  const div = document.createElement('div');
+  div.className = 'notif-item unread';
+  div.dataset.id = payload.data.id || 'new';
+  div.innerHTML = `<strong>${payload.notification.title}</strong><br><small>${payload.notification.body}</small>`;
+  bindNotifClick(div);
+  list.prepend(div);
+});
+</script>
+{% endblock %}

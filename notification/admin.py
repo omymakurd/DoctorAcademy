@@ -21,3 +21,10 @@ class NotificationAdmin(admin.ModelAdmin):
         updated = queryset.update(is_read=True)
         self.message_user(request, f"{updated} notification(s) marked as read.")
     mark_as_read.short_description = "Mark selected notifications as read"
+
+
+from django.contrib import admin
+from .models import Notification, AdminDevice
+
+
+admin.site.register(AdminDevice)
